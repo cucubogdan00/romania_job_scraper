@@ -1,3 +1,5 @@
+import requests
+
 def create_job_blueprint():
    
     job_structure = {
@@ -12,7 +14,25 @@ def create_job_blueprint():
     print(type(job_structure))
     return job_structure
 
+def fetch_html_content(url):
+
+    custom_headers = {
+        'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    }
+
+    try:
+        response = requests.get(url, headers = custom_headers, timeout = 10)
+        response.raise_for_status()
+        return response.text
+    except requests.RequestException as error:
+        print(f'The Error is : {error}')
+        return None
+
+
+
 if __name__ == "__main__":
     job_blueprint = create_job_blueprint()
     print(job_blueprint)
-    
+
+    html_data = fetch_html_content("https://en.wikipedia.org/wiki/Main_Page")
+    print(html_data)
