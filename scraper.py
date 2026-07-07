@@ -48,10 +48,20 @@ def parse_job_cards(html_content):
 
             if job_url and not job_url.startswith('http'):
                 job_url = 'https://www.ejobs.ro' + job_url
+
+            card_parent = heading.parent
+            company_tag = card_parent.find('h3', class_ = 'job-card-content-middle__info--darker')
+            company_text = company_tag.get_text(strip = True) if company_tag else 'Unknown'
+
+            location_tag = card_parent.find('div', class_= 'job-card-content-middle__info')
+            location_text = location_tag.get_text(strip = True) if location_tag else 'Unknown'
         
             job['title'] = title_text
             job['link'] = job_url
-            job['id'] = generate_job_id(title_text, "")
+            job['company'] = company_text
+            job['location'] = location_text
+
+            job['id'] = generate_job_id(title_text, company_text)
 
             job_list.append(job)
 
