@@ -36,16 +36,24 @@ def parse_job_cards(html_content):
     
     job_list = []
     soup = BeautifulSoup(html_content, 'html.parser')
-    items = soup.find_all('li')
+    headings = soup.find_all('h2', class_='job-card-content-middle__title')
 
-    for item in items[:5]:
-        job = create_job_blueprint()
+    for heading in headings[:5]:
 
-        text_data = item.get_text(strip = True)
-        job['title'] = text_data
-        job['id'] = generate_job_id(text_data, "")
+        link_tag = heading.find('a')
+        if link_tag:
+            job = create_job_blueprint()
+            title_text = link_tag.get_text(strip = True)
+            job_url = link_tag.get('href')  
 
-        job_list.append(job)
+            if job_url and not job_url.startswith('http'):
+                job_url = 'https://www.ejobs.ro' + job_url
+        
+            job['title'] = title_text
+            job['link'] = job_url
+            job['id'] = generate_job_id(title_text, "")
+
+            job_list.append(job)
 
     return job_list
 
@@ -58,7 +66,7 @@ def generate_job_id(title, company):
 
 if __name__ == "__main__":
 
-    target_url = "https://en.wikipedia.org/wiki/Main_Page"
+    target_url = "https://www.ejobs.ro/locuri-de-munca/programator"
 
     print("The page is downloading...")
     html_data = fetch_html_content(target_url)
