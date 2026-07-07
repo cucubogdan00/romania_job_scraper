@@ -164,7 +164,7 @@ if __name__ == "__main__":
 
     print('Starting Multi-Page Scraping Process...')
 
-    for page_number in range(1,11):
+    for page_number in range(1,4):
         if page_number == 1:
             target_url = base_url
         else:
