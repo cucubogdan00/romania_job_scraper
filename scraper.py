@@ -1,5 +1,7 @@
 import requests
 import hashlib
+import csv
+
 from bs4 import BeautifulSoup
 
 def create_job_blueprint():
@@ -60,14 +62,7 @@ def parse_job_cards(html_content):
             job['company'] = company_text
             job['location'] = location_text
 
-            matched_tech = []
-            lower_title = title_text.lower()
             tech_keywords = {'python', 'sap', 'abap', 'cnc', 'siemens', 'java', 'git', 'sql', 'docker', 'linux'}
-
-            for keyword in tech_keywords:
-                if keyword in lower_title:
-                    matched_tech.append(keyword)
-
             job['technologies'] = extract_technologies_from_description(job_url, tech_keywords)
 
             job['id'] = generate_job_id(title_text, company_text)
@@ -104,6 +99,26 @@ def extract_technologies_from_description(job_url, tech_keywords):
 
     return []
 
+def save_jobs_to_csv(job_list, filename = 'jobs.csv'):
+
+    if job_list == []:
+        print('The list is EMPTY!!!')
+        return
+    
+    headers = ['id', 'title', 'company', 'location', 'link', 'technologies']
+
+    with open(filename, 'w', encoding='utf-8', newline='') as file:
+        writer = csv.DictWriter(file, fieldnames=headers)
+        writer.writeheader()
+
+        for job in job_list:
+
+            row_data = job.copy()
+            row_data['technologies'] = ', '.join(job['technologies'])
+            writer.writerow(row_data)
+    
+    print(f'Successfully saved {len(job_list)} jobs to {filename}!')
+
 
 if __name__ == "__main__":
 
@@ -117,3 +132,5 @@ if __name__ == "__main__":
     
     print(f'I successfully extracted {len(extracted_jobs)} elements: ')
     print(extracted_jobs)
+
+    save_jobs_to_csv(extracted_jobs)
