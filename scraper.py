@@ -4,6 +4,8 @@ import csv
 import time
 
 from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 
 def create_job_blueprint():
    
@@ -20,16 +22,42 @@ def create_job_blueprint():
 
 def fetch_html_content(url):
 
-    custom_headers = {
-        'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    }
+    chrome_options = Options()
+    chrome_options.add_argument('--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36')
 
     try:
-        response = requests.get(url, headers = custom_headers, timeout = 10)
+        driver = webdriver.Chrome(options=chrome_options)
+        driver.get(url)
+
+        time.sleep(3)
+
+        for i in range(3):
+            driver.execute_script('window.scrollTo(0, document.body.scrollHeight);')
+            print(f'      [Selenium] Sent scroll command {i+1}/3...')
+
+            time.sleep(2)
+        
+        full_html = driver.page_source
+
+        driver.quit()
+
+        return full_html
+
+    except Exception as error:
+        print(f'Selenium Automation Error: {error}')
+        return None
+    
+def fetch_description_html_fast(url):
+
+    headers = {'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+
+    try: 
+        response = requests.get(url, headers = headers,  timeout = 5)
         response.raise_for_status()
+
         return response.text
-    except requests.RequestException as error:
-        print(f'The Error is : {error}')
+    except Exception as error:
+        print(f'There is an Error : {error}')
         return None
 
 def parse_job_cards(html_content):
@@ -86,7 +114,7 @@ def generate_job_id(title, company):
 
 def extract_technologies_from_description(job_url, tech_keywords):
 
-    job_html = fetch_html_content(job_url)
+    job_html = fetch_description_html_fast(job_url)
 
     if job_html == None: return []
 
@@ -154,7 +182,7 @@ if __name__ == "__main__":
         if page_number < 10:
             print('Taking a short break to simulate human behaviour (2 seconds)...')
             time.sleep(2)
-            
+
     print(f'\nTotal jobs collected : {len(all_jobs)}')
 
     it_roles = {'programator', 'developer', 'engineer', 'devops', 'cyber', 'qa', 'tester', 'frontend', 'backend', 'fullstack', 'administrator', 'security', 'support'}
