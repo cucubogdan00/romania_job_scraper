@@ -1,4 +1,5 @@
 import requests
+import hashlib
 from bs4 import BeautifulSoup
 
 def create_job_blueprint():
@@ -39,12 +40,22 @@ def parse_job_cards(html_content):
     items = soup.find_all('li')
 
     for item in items[:5]:
-        jobs = create_job_blueprint()
+        job = create_job_blueprint()
+
         text_data = item.get_text(strip = True)
-        jobs['title'] = text_data
-        job_list.append(jobs)
+        job['title'] = text_data
+        job['id'] = generate_job_id(text_data, "")
+
+        job_list.append(job)
 
     return job_list
+
+def generate_job_id(title, company):
+    
+    combined_text = title + company
+    hash_object = hashlib.sha256(combined_text.encode('utf-8'))
+
+    return hash_object.hexdigest()
 
 if __name__ == "__main__":
     job_blueprint = create_job_blueprint()
