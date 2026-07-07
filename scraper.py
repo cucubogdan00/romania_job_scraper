@@ -31,11 +31,12 @@ def fetch_html_content(url):
 
         time.sleep(3)
 
-        for i in range(3):
-            driver.execute_script('window.scrollTo(0, document.body.scrollHeight);')
-            print(f'      [Selenium] Sent scroll command {i+1}/3...')
+        for i in range(6):
+            current_pixel = (i + 1) * 1500
+            driver.execute_script(f'window.scrollTo(0, {current_pixel});')
+            print(f'      [Selenium] Incremental scroll to {current_pixel}px ({i+1}/6)...')
 
-            time.sleep(2)
+            time.sleep(1.5)
         
         full_html = driver.page_source
 
@@ -98,6 +99,8 @@ def parse_job_cards(html_content):
                 'azure', 'jenkins', 'selenium', 'cypress', 'jmeter', 'wireshark', 'automation'
             }
             job['technologies'] = extract_technologies_from_description(job_url, tech_keywords)
+
+            time.sleep(1.5)
 
             job['id'] = generate_job_id(title_text, company_text)
 
