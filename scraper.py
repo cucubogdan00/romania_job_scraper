@@ -31,10 +31,10 @@ def fetch_html_content(url):
 
         time.sleep(3)
 
-        for i in range(6):
+        for i in range(7):
             current_pixel = (i + 1) * 1500
             driver.execute_script(f'window.scrollTo(0, {current_pixel});')
-            print(f'      [Selenium] Incremental scroll to {current_pixel}px ({i+1}/6)...')
+            print(f'      [Selenium] Incremental scroll to {current_pixel}px ({i+1}/7)...')
 
             time.sleep(1.5)
         
