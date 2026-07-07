@@ -1,4 +1,5 @@
 import requests
+from bs4 import BeautifulSoup
 
 def create_job_blueprint():
    
@@ -28,11 +29,29 @@ def fetch_html_content(url):
         print(f'The Error is : {error}')
         return None
 
+def parse_job_cards(html_content):
 
+    if html_content == None:
+        return []
+    
+    job_list = []
+    soup = BeautifulSoup(html_content, 'html.parser')
+    items = soup.find_all('li')
+
+    for item in items[:5]:
+        jobs = create_job_blueprint()
+        text_data = item.get_text(strip = True)
+        jobs['title'] = text_data
+        job_list.append(jobs)
+
+    return job_list
 
 if __name__ == "__main__":
     job_blueprint = create_job_blueprint()
     print(job_blueprint)
 
     html_data = fetch_html_content("https://en.wikipedia.org/wiki/Main_Page")
-    print(html_data)
+    # print(html_data)
+
+    extracted_jobs = parse_job_cards(html_data)
+    print(extracted_jobs)
