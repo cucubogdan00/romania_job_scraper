@@ -13,7 +13,6 @@ def create_job_blueprint():
         'technologies': []       # Will hold a list of required skills/tech
      }
     
-    print(type(job_structure))
     return job_structure
 
 def fetch_html_content(url):
@@ -58,11 +57,14 @@ def generate_job_id(title, company):
     return hash_object.hexdigest()
 
 if __name__ == "__main__":
-    job_blueprint = create_job_blueprint()
-    print(job_blueprint)
 
-    html_data = fetch_html_content("https://en.wikipedia.org/wiki/Main_Page")
-    # print(html_data)
+    target_url = "https://en.wikipedia.org/wiki/Main_Page"
 
+    print("The page is downloading...")
+    html_data = fetch_html_content(target_url)
+
+    print("Data is parsing...")
     extracted_jobs = parse_job_cards(html_data)
+    
+    print(f'I successfully extracted {len(extracted_jobs)} elements: ')
     print(extracted_jobs)
