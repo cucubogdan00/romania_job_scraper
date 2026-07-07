@@ -61,6 +61,16 @@ def parse_job_cards(html_content):
             job['company'] = company_text
             job['location'] = location_text
 
+            matched_tech = []
+            lower_title = title_text.lower()
+            tech_keywords = {'python', 'sap', 'abap', 'cnc', 'siemens', 'java'}
+
+            for keyword in tech_keywords:
+                if keyword in lower_title:
+                    matched_tech.append(keyword)
+
+            job['technologies'] = matched_tech
+
             job['id'] = generate_job_id(title_text, company_text)
 
             job_list.append(job)
