@@ -39,7 +39,7 @@ def parse_job_cards(html_content):
     soup = BeautifulSoup(html_content, 'html.parser')
     headings = soup.find_all('h2', class_='job-card-content-middle__title')
 
-    for heading in headings[:5]:
+    for heading in headings:
 
         link_tag = heading.find('a')
         if link_tag:
@@ -122,15 +122,28 @@ def save_jobs_to_csv(job_list, filename = 'jobs.csv'):
 
 if __name__ == "__main__":
 
-    target_url = "https://www.ejobs.ro/locuri-de-munca/programator"
+    all_jobs = []
+    base_url = 'https://www.ejobs.ro/locuri-de-munca/software'
 
-    print("The page is downloading...")
-    html_data = fetch_html_content(target_url)
+    print('Starting Multi-Page Scraping Process...')
 
-    print("Data is parsing...")
-    extracted_jobs = parse_job_cards(html_data)
+    for page_number in range(1,4):
+        if page_number == 1:
+            target_url = base_url
+        else:
+            target_url = f'{base_url}/pagina{page_number}'
     
-    print(f'I successfully extracted {len(extracted_jobs)} elements: ')
-    print(extracted_jobs)
+        print(f'Downloading Page {page_number}...')
+        html_data = fetch_html_content(target_url)
+        page_jobs = parse_job_cards(html_data)
 
-    save_jobs_to_csv(extracted_jobs)
+        print(f'I successfully extracted {len(page_jobs)} jobs from Page {page_number}.') 
+
+        if len(page_jobs) == 0:
+            print('No more jobs found!Stopping the scraper.')
+            break
+
+        all_jobs.extend(page_jobs)
+
+    print(f'\nTotal jobs collected : {len(all_jobs)}')
+    save_jobs_to_csv(all_jobs)
