@@ -1,6 +1,7 @@
 import requests
 import hashlib
 import csv
+import time
 
 from bs4 import BeautifulSoup
 
@@ -142,7 +143,7 @@ if __name__ == "__main__":
         html_data = fetch_html_content(target_url)
         page_jobs = parse_job_cards(html_data)
 
-        print(f'I successfully extracted {len(page_jobs)} jobs from Page {page_number}.') 
+        print(f'Successfully extracted {len(page_jobs)} jobs from Page {page_number}.') 
 
         if len(page_jobs) == 0:
             print('No more jobs found!Stopping the scraper.')
@@ -150,6 +151,10 @@ if __name__ == "__main__":
 
         all_jobs.extend(page_jobs)
 
+        if page_number < 10:
+            print('Taking a short break to simulate human behaviour (2 seconds)...')
+            time.sleep(2)
+            
     print(f'\nTotal jobs collected : {len(all_jobs)}')
 
     it_roles = {'programator', 'developer', 'engineer', 'devops', 'cyber', 'qa', 'tester', 'frontend', 'backend', 'fullstack', 'administrator', 'security', 'support'}
