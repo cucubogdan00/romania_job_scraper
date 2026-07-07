@@ -62,7 +62,12 @@ def parse_job_cards(html_content):
             job['company'] = company_text
             job['location'] = location_text
 
-            tech_keywords = {'python', 'sap', 'abap', 'cnc', 'siemens', 'java', 'git', 'sql', 'docker', 'linux'}
+            tech_keywords = {
+                'python', 'sap', 'abap', 'cnc', 'siemens', 'java', 'git', 'sql', 'docker', 'linux',
+                'javascript', 'react', 'angular', 'html', 'css', 'php', 'c++', 'c#', 'ruby', 'go', 
+                'rust', 'typescript', 'vue', 'node', 'postgres', 'mongo', 'kubernetes', 'aws', 
+                'azure', 'jenkins', 'selenium', 'cypress', 'jmeter', 'wireshark', 'automation'
+            }
             job['technologies'] = extract_technologies_from_description(job_url, tech_keywords)
 
             job['id'] = generate_job_id(title_text, company_text)
@@ -127,7 +132,7 @@ if __name__ == "__main__":
 
     print('Starting Multi-Page Scraping Process...')
 
-    for page_number in range(1,4):
+    for page_number in range(1,11):
         if page_number == 1:
             target_url = base_url
         else:
@@ -146,4 +151,18 @@ if __name__ == "__main__":
         all_jobs.extend(page_jobs)
 
     print(f'\nTotal jobs collected : {len(all_jobs)}')
-    save_jobs_to_csv(all_jobs)
+
+    it_roles = {'programator', 'developer', 'engineer', 'devops', 'cyber', 'qa', 'tester', 'frontend', 'backend', 'fullstack', 'administrator', 'security', 'support'}
+    filtered_jobs = []
+
+    for job in all_jobs:
+        lower_title = job['title'].lower()
+
+        is_it_job = any(role in lower_title for role in it_roles)
+
+        if is_it_job:
+            filtered_jobs.append(job)
+
+    print(f'Jobs matching your tech keywords: {len(filtered_jobs)}')
+
+    save_jobs_to_csv(filtered_jobs)
