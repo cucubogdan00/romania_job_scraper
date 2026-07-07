@@ -31,8 +31,7 @@ def fetch_html_content(url):
 
 def parse_job_cards(html_content):
 
-    if html_content == None:
-        return []
+    if html_content == None: return []
     
     job_list = []
     soup = BeautifulSoup(html_content, 'html.parser')
@@ -63,13 +62,13 @@ def parse_job_cards(html_content):
 
             matched_tech = []
             lower_title = title_text.lower()
-            tech_keywords = {'python', 'sap', 'abap', 'cnc', 'siemens', 'java'}
+            tech_keywords = {'python', 'sap', 'abap', 'cnc', 'siemens', 'java', 'git', 'sql', 'docker', 'linux'}
 
             for keyword in tech_keywords:
                 if keyword in lower_title:
                     matched_tech.append(keyword)
 
-            job['technologies'] = matched_tech
+            job['technologies'] = extract_technologies_from_description(job_url, tech_keywords)
 
             job['id'] = generate_job_id(title_text, company_text)
 
@@ -83,6 +82,28 @@ def generate_job_id(title, company):
     hash_object = hashlib.sha256(combined_text.encode('utf-8'))
 
     return hash_object.hexdigest()
+
+def extract_technologies_from_description(job_url, tech_keywords):
+
+    job_html = fetch_html_content(job_url)
+
+    if job_html == None: return []
+
+    soup = BeautifulSoup(job_html, 'html.parser')
+    description_container = soup.find('div' , class_ = 'jobs-show-main-description__section')
+
+    if description_container:
+        full_text = description_container.get_text(strip = True).lower()
+        found_tech = []
+        
+        for keyword in tech_keywords:
+            if keyword in full_text:
+                found_tech.append(keyword)
+        
+        return found_tech
+
+    return []
+
 
 if __name__ == "__main__":
 
