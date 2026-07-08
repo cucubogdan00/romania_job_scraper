@@ -100,7 +100,9 @@ def parse_job_cards(html_content):
                 'python', 'sap', 'abap', 'cnc', 'siemens', 'java', 'git', 'sql', 'docker', 'linux',
                 'javascript', 'react', 'angular', 'html', 'css', 'php', 'c++', 'c#', 'ruby', 'go', 
                 'rust', 'typescript', 'vue', 'node', 'postgres', 'mongo', 'kubernetes', 'aws', 
-                'azure', 'jenkins', 'selenium', 'cypress', 'jmeter', 'wireshark', 'automation'
+                'azure', 'jenkins', 'selenium', 'cypress', 'jmeter', 'wireshark', 'automation',
+                'hana', 'fiori', 'btp', 'basis', 'playwright', 'postman', 'ci/cd', 'bash', 'terraform',
+                'c-sharp'
             }
             job['technologies'] = extract_technologies_from_description(job_url, tech_keywords)
 
@@ -130,15 +132,17 @@ def extract_technologies_from_description(job_url, tech_keywords):
 
     if description_container:
         full_text = description_container.get_text(strip = True).lower()
-        found_tech = []
-        
-        for keyword in tech_keywords:
-            if keyword in full_text:
-                found_tech.append(keyword)
-        
-        return found_tech
+    else:
+        body_container = soup.find('body')
+        full_text = body_container.get_text(strip = True).lower() if body_container else ""
 
-    return []
+    found_tech = []
+        
+    for keyword in tech_keywords:
+        if keyword in full_text:
+            found_tech.append(keyword)
+        
+    return found_tech
 
 def save_jobs_to_db(job_list, db_name = 'jobs.db'):
 
