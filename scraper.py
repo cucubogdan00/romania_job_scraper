@@ -161,8 +161,8 @@ def save_jobs_to_db(job_list, db_name = 'jobs.db'):
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         query = '''
-            INSERT OR IGNORE INTO JOBS (id, title, company, location, link, technologies, date_scraped, source)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT OR IGNORE INTO JOBS (id, title, company, location, link, technologies, date_scraped, source, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         '''
 
         cursor.execute(query, (
@@ -173,7 +173,8 @@ def save_jobs_to_db(job_list, db_name = 'jobs.db'):
             job['link'],
             tech_string,
             current_time,
-            'eJobs'
+            'eJobs',
+            'active'
         ))
 
         if cursor.rowcount > 0: 
@@ -198,7 +199,8 @@ def init_db(db_name = 'jobs.db'):
             link TEXT,
             technologies TEXT,
             date_scraped TEXT,
-            source TEXT
+            source TEXT,
+            status TEXT DEFAULT 'active'
         )
     ''')
 
@@ -206,9 +208,43 @@ def init_db(db_name = 'jobs.db'):
     connection.close()
     print(f'[SQL Database] Initialized successfully. Table "jobs" is ready.')
 
+def check_expired_jobs(db_name = 'jobs.db'):
+
+    print('\n[Checker] Starting verification of active jobs for expiration...')
+
+    connection = sqlite3.connect(db_name)
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT id, link, title FROM jobs WHERE status = 'active'")
+    active_jobs = cursor.fetchall()
+
+    if not active_jobs:
+        print('[Checker] No active jobs found in the database to verify.')
+        connection.close()
+        return
+    
+    print(f'[Checker] Found {len(active_jobs)} active jobs to check on the website.')
+
+    expired_count = 0
+
+    for job_id, job_url, job_title in active_jobs:
+        print(f'       [Checking] "{job_title}"...')
+
+        job_html = fetch_description_html_fast(job_url)
+
+        if job_html == None or 'anuntul nu mai este activ' in job_html.lower() or 'aceasta pagina a expirat' in job_html.lower():
+            expired_count += 1
+            query_update = "UPDATE jobs SET status = 'expired' WHERE id = ?"
+            cursor.execute(query_update, (job_id, ))
+
+    connection.commit()
+    connection.close()
+
 if __name__ == "__main__":
 
     init_db()
+
+    check_expired_jobs()
 
     all_jobs = []
     base_url = 'https://www.ejobs.ro/locuri-de-munca/software'
