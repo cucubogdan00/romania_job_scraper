@@ -2,6 +2,7 @@ import requests
 import hashlib
 import csv
 import time
+import sqlite3
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -23,7 +24,9 @@ def create_job_blueprint():
 def fetch_html_content(url):
 
     chrome_options = Options()
+    chrome_options.add_argument('--headless=new')
     chrome_options.add_argument('--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36')
+    chrome_options.add_argument('--disable-gpu')
 
     try:
         driver = webdriver.Chrome(options=chrome_options)
@@ -136,28 +139,66 @@ def extract_technologies_from_description(job_url, tech_keywords):
 
     return []
 
-def save_jobs_to_csv(job_list, filename = 'jobs.csv'):
+def save_jobs_to_db(job_list, db_name = 'jobs.db'):
 
-    if job_list == []:
-        print('The list is EMPTY!!!')
+    if not job_list :
+        print('[SQL] No jobs to save.')
         return
     
-    headers = ['id', 'title', 'company', 'location', 'link', 'technologies']
+    connection = sqlite3.connect(db_name)
+    cursor = connection.cursor()
 
-    with open(filename, 'w', encoding='utf-8', newline='') as file:
-        writer = csv.DictWriter(file, fieldnames=headers)
-        writer.writeheader()
-
-        for job in job_list:
-
-            row_data = job.copy()
-            row_data['technologies'] = ', '.join(job['technologies'])
-            writer.writerow(row_data)
+    saved_count = 0
     
-    print(f'Successfully saved {len(job_list)} jobs to {filename}!')
+    for job in job_list:
 
+        tech_string = ', '.join(job['technologies'])
+
+        query = '''
+            INSERT OR IGNORE INTO JOBS (id, title, company, location, link, technologies)
+            VALUES (?, ?, ?, ?, ?, ?)
+        '''
+
+        cursor.execute(query, (
+            job['id'],
+            job['title'],
+            job['company'],
+            job['location'],
+            job['link'],
+            tech_string
+        ))
+
+        if cursor.rowcount > 0: 
+            saved_count += 1
+
+    connection.commit()
+    connection.close()
+
+    print(f'[SQL Database] Done! Out of {len(job_list)} filtered jobs, {saved_count} were NEW and successfully saved.')
+
+def init_db(db_name = 'jobs.db'):
+
+    connection = sqlite3.connect(db_name)
+    cursor = connection.cursor()
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS jobs(
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            company TEXT,
+            location TEXT,
+            link TEXT,
+            technologies TEXT
+        )
+    ''')
+
+    connection.commit()
+    connection.close()
+    print(f'[SQL Database] Initialized successfully. Table "jobs" is ready.')
 
 if __name__ == "__main__":
+
+    init_db()
 
     all_jobs = []
     base_url = 'https://www.ejobs.ro/locuri-de-munca/software'
@@ -201,4 +242,4 @@ if __name__ == "__main__":
 
     print(f'Jobs matching your tech keywords: {len(filtered_jobs)}')
 
-    save_jobs_to_csv(filtered_jobs)
+    save_jobs_to_db(filtered_jobs)
