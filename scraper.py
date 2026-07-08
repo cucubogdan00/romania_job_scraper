@@ -7,6 +7,7 @@ import sqlite3
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from datetime import datetime
 
 def create_job_blueprint():
    
@@ -153,10 +154,11 @@ def save_jobs_to_db(job_list, db_name = 'jobs.db'):
     for job in job_list:
 
         tech_string = ', '.join(job['technologies'])
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         query = '''
-            INSERT OR IGNORE INTO JOBS (id, title, company, location, link, technologies)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT OR IGNORE INTO JOBS (id, title, company, location, link, technologies, date_scraped)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         '''
 
         cursor.execute(query, (
@@ -165,7 +167,8 @@ def save_jobs_to_db(job_list, db_name = 'jobs.db'):
             job['company'],
             job['location'],
             job['link'],
-            tech_string
+            tech_string,
+            current_time
         ))
 
         if cursor.rowcount > 0: 
@@ -188,7 +191,8 @@ def init_db(db_name = 'jobs.db'):
             company TEXT,
             location TEXT,
             link TEXT,
-            technologies TEXT
+            technologies TEXT,
+            date_scraped TEXT
         )
     ''')
 
