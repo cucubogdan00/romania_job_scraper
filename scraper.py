@@ -61,6 +61,12 @@ def fetch_description_html_fast(url):
         response.raise_for_status()
 
         return response.text
+    except requests.exceptions.HTTPError as http_err:
+        if http_err.response.status_code == 429:
+            return 'BLOCKED_429'
+        else:
+            print(f'Error HTTP : {http_err}')
+            return None
     except Exception as error:
         print(f'There is an Error : {error}')
         return None
@@ -232,12 +238,51 @@ def check_expired_jobs(db_name = 'jobs.db'):
 
         job_html = fetch_description_html_fast(job_url)
 
+        time.sleep(1.5)
+
+        if job_html == 'BLOCKED_429':
+            print('[Warning] 429 Too Many Requests detected. Stopping verification loop to protect database integrity.')
+            break
+
         if job_html == None or 'anuntul nu mai este activ' in job_html.lower() or 'aceasta pagina a expirat' in job_html.lower():
             expired_count += 1
             query_update = "UPDATE jobs SET status = 'expired' WHERE id = ?"
             cursor.execute(query_update, (job_id, ))
 
     connection.commit()
+    connection.close()
+
+def generate_market_report(db_name = 'jobs.db'):
+
+    connection = sqlite3.connect(db_name)
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT technologies FROM jobs WHERE status = 'active'")
+    active_jobs_tech = cursor.fetchall()
+
+    tech_counts = {}
+
+    for row in active_jobs_tech:
+        tech_string = row[0]
+        if tech_string:
+            technologies = tech_string.split(', ')
+
+            for tech in technologies:
+                if tech in tech_counts:
+                    tech_counts[tech] += 1
+                else:
+                    tech_counts[tech] = 1
+ 
+    sorted_tech = sorted(tech_counts.items() , key = lambda item : item[1], reverse = True)
+    print('\n' + "=" * 40)
+    print('   📊 ACTIVE JOB MARKET REPORT 📊   ')
+    print('=' * 40)
+
+    for technology, count in sorted_tech:
+        print(f' {technology.upper()} : {count} jobs')
+
+    print('=' * 40 + '\n')
+
     connection.close()
 
 if __name__ == "__main__":
@@ -251,7 +296,7 @@ if __name__ == "__main__":
 
     print('Starting Multi-Page Scraping Process...')
 
-    for page_number in range(1,4):
+    for page_number in range(1,2):
         if page_number == 1:
             target_url = base_url
         else:
@@ -288,4 +333,6 @@ if __name__ == "__main__":
 
     print(f'Jobs matching your tech keywords: {len(filtered_jobs)}')
 
-    save_jobs_to_db(filtered_jobs)
+    save_jobs_to_db(filtered_jobs) 
+
+    generate_market_report()
