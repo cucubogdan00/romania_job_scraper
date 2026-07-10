@@ -167,8 +167,10 @@ def save_jobs_to_db(job_list, db_name = 'jobs.db'):
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         query = '''
-            INSERT OR IGNORE INTO JOBS (id, title, company, location, link, technologies, date_scraped, source, status)
+            INSERT INTO JOBS (id, title, company, location, link, technologies, date_scraped, source, status)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT (id) DO UPDATE SET status = 'active' , date_scraped = ?  
+          
         '''
 
         cursor.execute(query, (
@@ -180,7 +182,8 @@ def save_jobs_to_db(job_list, db_name = 'jobs.db'):
             tech_string,
             current_time,
             'eJobs',
-            'active'
+            'active',
+            current_time
         ))
 
         if cursor.rowcount > 0: 
