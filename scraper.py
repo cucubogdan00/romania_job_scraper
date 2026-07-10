@@ -4,388 +4,130 @@ import csv
 import time
 import sqlite3
 
+from parser import JobParser
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from datetime import datetime
 
-def create_job_blueprint():
-   
-    job_structure = {
-        'id': None,              # Will hold the SHA-256 unique hash
-        'title': "",             # Will hold the job title string
-        'company': "",           # Will hold the company name string
-        'location': "",          # Will hold the city / remote status
-        'link': "",              # Will hold the URL to the job application
-        'technologies': []       # Will hold a list of required skills/tech
-     }
-    
-    return job_structure
-
-def fetch_html_content(url):
-
-    chrome_options = Options()
-    chrome_options.add_argument('--headless=new')
-    chrome_options.add_argument('--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36')
-    chrome_options.add_argument('--disable-gpu')
-
-    try:
-        driver = webdriver.Chrome(options=chrome_options)
-        driver.get(url)
-
-        time.sleep(3)
-
-        for i in range(7):
-            current_pixel = (i + 1) * 1500
-            driver.execute_script(f'window.scrollTo(0, {current_pixel});')
-            print(f'      [Selenium] Incremental scroll to {current_pixel}px ({i+1}/7)...')
-
-            time.sleep(1.5)
+class EJobsScraper:
         
-        full_html = driver.page_source
-
-        driver.quit()
-
-        return full_html
-
-    except Exception as error:
-        print(f'Selenium Automation Error: {error}')
-        return None
+    def create_job_blueprint(self):
     
-def fetch_description_html_fast(url):
+        job_structure = {
+            'id': None,              # Will hold the SHA-256 unique hash
+            'title': "",             # Will hold the job title string
+            'company': "",           # Will hold the company name string
+            'location': "",          # Will hold the city / remote status
+            'link': "",              # Will hold the URL to the job application
+            'technologies': []       # Will hold a list of required skills/tech
+        }
+        
+        return job_structure
 
-    headers = {'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+    def fetch_html_content(self, url):
 
-    try: 
-        response = requests.get(url, headers = headers,  timeout = 5)
-        response.raise_for_status()
+        chrome_options = Options()
+        chrome_options.add_argument('--headless=new')
+        chrome_options.add_argument('--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36')
+        chrome_options.add_argument('--disable-gpu')
 
-        return response.text
-    except requests.exceptions.HTTPError as http_err:
-        if http_err.response.status_code == 429:
-            return 'BLOCKED_429'
-        else:
-            print(f'Error HTTP : {http_err}')
+        try:
+            driver = webdriver.Chrome(options=chrome_options)
+            driver.get(url)
+
+            time.sleep(3)
+
+            for i in range(7):
+                current_pixel = (i + 1) * 1500
+                driver.execute_script(f'window.scrollTo(0, {current_pixel});')
+                print(f'      [Selenium] Incremental scroll to {current_pixel}px ({i+1}/7)...')
+
+                time.sleep(1.5)
+            
+            full_html = driver.page_source
+
+            driver.quit()
+
+            return full_html
+
+        except Exception as error:
+            print(f'Selenium Automation Error: {error}')
             return None
-    except Exception as error:
-        print(f'There is an Error : {error}')
-        return None
-
-def parse_job_cards(html_content):
-
-    if html_content == None: return []
-    
-    job_list = []
-    soup = BeautifulSoup(html_content, 'html.parser')
-    headings = soup.find_all('h2', class_='job-card-content-middle__title')
-
-    for heading in headings:
-
-        link_tag = heading.find('a')
-        if link_tag:
-            job = create_job_blueprint()
-            title_text = link_tag.get_text(strip = True)
-            job_url = link_tag.get('href')  
-
-            if job_url and not job_url.startswith('http'):
-                job_url = 'https://www.ejobs.ro' + job_url
-
-            card_parent = heading.parent
-            company_tag = card_parent.find('h3', class_ = 'job-card-content-middle__info--darker')
-            company_text = company_tag.get_text(strip = True) if company_tag else 'Unknown'
-
-            location_tag = card_parent.find('div', class_= 'job-card-content-middle__info')
-            location_text = location_tag.get_text(strip = True) if location_tag else 'Unknown'
         
-            job['title'] = title_text
-            job['link'] = job_url
-            job['company'] = company_text
-            job['location'] = location_text
+    def fetch_description_html_fast(self, url):
 
-            tech_keywords = {
-                'python', 'sap', 'abap', 'cnc', 'siemens', 'java', 'git', 'sql', 'docker', 'linux',
-                'javascript', 'react', 'angular', 'html', 'css', 'php', 'c++', 'c#', 'ruby', 'go', 
-                'rust', 'typescript', 'vue', 'node', 'postgres', 'mongo', 'kubernetes', 'aws', 
-                'azure', 'jenkins', 'selenium', 'cypress', 'jmeter', 'wireshark', 'automation',
-                'hana', 'fiori', 'btp', 'basis', 'playwright', 'postman', 'ci/cd', 'bash', 'terraform',
-                'c-sharp'
-            }
-            job['technologies'] = extract_technologies_from_description(job_url, tech_keywords)
+        headers = {'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
 
-            time.sleep(1.5)
+        try: 
+            response = requests.get(url, headers = headers,  timeout = 5)
+            response.raise_for_status()
 
-            job['id'] = generate_job_id(title_text, company_text)
+            return response.text
+        except requests.exceptions.HTTPError as http_err:
+            if http_err.response.status_code == 429:
+                return 'BLOCKED_429'
+            else:
+                print(f'Error HTTP : {http_err}')
+                return None
+        except Exception as error:
+            print(f'There is an Error : {error}')
+            return None
 
-            job_list.append(job)
+    def parse_job_cards(self, html_content):
 
-    return job_list
-
-def generate_job_id(title, company):
-    
-    combined_text = title + company
-    hash_object = hashlib.sha256(combined_text.encode('utf-8'))
-
-    return hash_object.hexdigest()
-
-def extract_technologies_from_description(job_url, tech_keywords):
-
-    job_html = fetch_description_html_fast(job_url)
-
-    if job_html == None: return []
-
-    soup = BeautifulSoup(job_html, 'html.parser')
-    description_container = soup.find('div' , class_ = 'jobs-show-main-description__section')
-
-    if description_container:
-        full_text = description_container.get_text(strip = True).lower()
-    else:
-        body_container = soup.find('body')
-        full_text = body_container.get_text(strip = True).lower() if body_container else ""
-
-    found_tech = []
+        if html_content == None: return []
         
-    for keyword in tech_keywords:
-        if keyword in full_text:
-            found_tech.append(keyword)
+        job_list = []
+        soup = BeautifulSoup(html_content, 'html.parser')
+        headings = soup.find_all('h2', class_='job-card-content-middle__title')
+
+        for heading in headings:
+
+            link_tag = heading.find('a')
+            if link_tag:
+                job = self.create_job_blueprint()
+                title_text = link_tag.get_text(strip = True)
+                job_url = link_tag.get('href')  
+
+                if job_url and not job_url.startswith('http'):
+                    job_url = 'https://www.ejobs.ro' + job_url
+
+                card_parent = heading.parent
+                company_tag = card_parent.find('h3', class_ = 'job-card-content-middle__info--darker')
+                company_text = company_tag.get_text(strip = True) if company_tag else 'Unknown'
+
+                location_tag = card_parent.find('div', class_= 'job-card-content-middle__info')
+                location_text = location_tag.get_text(strip = True) if location_tag else 'Unknown'
+            
+                job['title'] = title_text
+                job['link'] = job_url
+                job['company'] = company_text
+                job['location'] = location_text
+
+                parser = JobParser()
+
+                tech_keywords = {
+                    'python', 'sap', 'abap', 'cnc', 'siemens', 'java', 'git', 'sql', 'docker', 'linux',
+                    'javascript', 'react', 'angular', 'html', 'css', 'php', 'c++', 'c#', 'ruby', 'go', 
+                    'rust', 'typescript', 'vue', 'node', 'postgres', 'mongo', 'kubernetes', 'aws', 
+                    'azure', 'jenkins', 'selenium', 'cypress', 'jmeter', 'wireshark', 'automation',
+                    'hana', 'fiori', 'btp', 'basis', 'playwright', 'postman', 'ci/cd', 'bash', 'terraform',
+                    'c-sharp'
+                }
+                job['technologies'] = parser.extract_technologies_from_description(job_url, tech_keywords, self.fetch_description_html_fast)
+
+                time.sleep(1.5)
+
+                job['id'] = self.generate_job_id(title_text, company_text)
+
+                job_list.append(job)
+
+        return job_list
+
+    def generate_job_id(self, title, company):
         
-    return found_tech
+        combined_text = title + company
+        hash_object = hashlib.sha256(combined_text.encode('utf-8'))
 
-def parse_location(location_text):
-
-    if not location_text:
-        return 'N/A', 'On-site'
-    
-    loc_lower = location_text.lower()
-
-    if 'remote' in loc_lower:
-        work_mode = 'Remote'
-    elif 'hybrid' in loc_lower or 'hibrid' in loc_lower:
-        work_mode = 'Hybrid'
-    else:
-        work_mode = 'On-site'
-
-    city_clean = location_text
-    words_to_remove = ['remote', 'Remote', 'hybrid', 'Hybrid', 'hibrid', 'Hibrid', '(', ')', ',']
-
-    for word in words_to_remove:
-        city_clean = city_clean.replace(word, '')
-
-    city_clean = city_clean.strip().strip(',').strip()
-
-    if not city_clean or 'acas' in city_clean.lower():
-        city_clean = 'All' if work_mode == 'Remote' else 'N/A'
-
-    return city_clean, work_mode
-
-def save_jobs_to_db(job_list, db_name = 'jobs.db'):
-
-    if not job_list :
-        print('[SQL] No jobs to save.')
-        return
-    
-    connection = sqlite3.connect(db_name)
-    cursor = connection.cursor()
-
-    saved_count = 0
-    
-    for job in job_list:
-
-        tech_string = ', '.join(job['technologies'])
-        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
-        city , work_mode = parse_location(job['location'])
-
-        query = '''
-            INSERT INTO JOBS (id, title, company, location, city, work_mode, link, technologies, date_scraped, source, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT (id) DO UPDATE SET status = 'active' , date_scraped = ?  
-          
-        '''
-
-        cursor.execute(query, (
-            job['id'],
-            job['title'],
-            job['company'],
-            job['location'],
-            city,
-            work_mode,
-            job['link'],
-            tech_string,
-            current_time,
-            'eJobs',
-            'active',
-            current_time
-        ))
-
-        if cursor.rowcount > 0: 
-            saved_count += 1
-
-    connection.commit()
-    connection.close()
-
-    print(f'[SQL Database] Done! Out of {len(job_list)} filtered jobs, {saved_count} were NEW and successfully saved.')
-
-def init_db(db_name = 'jobs.db'):
-
-    connection = sqlite3.connect(db_name)
-    cursor = connection.cursor()
-
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS jobs(
-            id TEXT PRIMARY KEY,
-            title TEXT NOT NULL,
-            company TEXT,
-            location TEXT,
-            city TEXT,
-            work_mode TEXT,
-            link TEXT,
-            technologies TEXT,
-            date_scraped TEXT,
-            source TEXT,
-            status TEXT DEFAULT 'active'
-        )
-    ''')
-
-    connection.commit()
-    connection.close()
-    print(f'[SQL Database] Initialized successfully. Table "jobs" is ready.')
-
-def check_expired_jobs(db_name = 'jobs.db'):
-
-    print('\n[Checker] Starting verification of active jobs for expiration...')
-
-    connection = sqlite3.connect(db_name)
-    cursor = connection.cursor()
-
-    cursor.execute("SELECT id, link, title FROM jobs WHERE status = 'active'")
-    active_jobs = cursor.fetchall()
-
-    if not active_jobs:
-        print('[Checker] No active jobs found in the database to verify.')
-        connection.close()
-        return
-    
-    print(f'[Checker] Found {len(active_jobs)} active jobs to check on the website.')
-
-    expired_count = 0
-
-    for job_id, job_url, job_title in active_jobs:
-        print(f'       [Checking] "{job_title}"...')
-
-        job_html = fetch_description_html_fast(job_url)
-
-        time.sleep(1.5)
-
-        if job_html == 'BLOCKED_429':
-            print('[Warning] 429 Too Many Requests detected. Stopping verification loop to protect database integrity.')
-            break
-
-        if job_html == None or 'anuntul nu mai este activ' in job_html.lower() or 'aceasta pagina a expirat' in job_html.lower():
-            expired_count += 1
-            query_update = "UPDATE jobs SET status = 'expired' WHERE id = ?"
-            cursor.execute(query_update, (job_id, ))
-
-    connection.commit()
-    connection.close()
-
-def generate_market_report(db_name = 'jobs.db'):
-
-    connection = sqlite3.connect(db_name)
-    cursor = connection.cursor()
-
-    cursor.execute("SELECT technologies FROM jobs WHERE status = 'active'")
-    active_jobs_tech = cursor.fetchall()
-
-    tech_counts = {}
-
-    for row in active_jobs_tech:
-        tech_string = row[0]
-        if tech_string:
-            technologies = tech_string.split(', ')
-
-            for tech in technologies:
-                if tech in tech_counts:
-                    tech_counts[tech] += 1
-                else:
-                    tech_counts[tech] = 1
- 
-    sorted_tech = sorted(tech_counts.items() , key = lambda item : item[1], reverse = True)
-    print('\n' + "=" * 40)
-    print('   📊 ACTIVE JOB MARKET REPORT 📊   ')
-    print('=' * 40)
-
-    for technology, count in sorted_tech:
-        print(f' {technology.upper()} : {count} jobs')
-
-    print('=' * 40 + '\n')
-
-
-    cursor.execute("SELECT work_mode, COUNT(*) FROM jobs WHERE status = 'active' GROUP BY work_mode")
-    mode_counts = cursor.fetchall()
-
-    mode_emojis = {
-        'Remote' : '🏠 REMOTE',
-        'Hybrid' : '🤝 HYBRID',
-        'On-site' : '🏢 ON-SITE'
-    }
-
-    print('=' * 40)
-    print("   🏢 WORK MODE DISTRIBUTION 🏢   ")
-    print("=" * 40)
-    for mode, count in mode_counts:
-        display_name = mode_emojis.get(mode, mode.upper())
-        print(f' {display_name} : {count} jobs' )
-
-    connection.close()
-
-if __name__ == "__main__":
-
-    init_db()
-
-    check_expired_jobs()
-
-    all_jobs = []
-    base_url = 'https://www.ejobs.ro/locuri-de-munca/software'
-
-    print('Starting Multi-Page Scraping Process...')
-
-    for page_number in range(1,2):
-        if page_number == 1:
-            target_url = base_url
-        else:
-            target_url = f'{base_url}/pagina{page_number}'
-    
-        print(f'Downloading Page {page_number}...')
-        html_data = fetch_html_content(target_url)
-        page_jobs = parse_job_cards(html_data)
-
-        print(f'Successfully extracted {len(page_jobs)} jobs from Page {page_number}.') 
-
-        if len(page_jobs) == 0:
-            print('No more jobs found!Stopping the scraper.')
-            break
-
-        all_jobs.extend(page_jobs)
-
-        if page_number < 10:
-            print('Taking a short break to simulate human behaviour (2 seconds)...')
-            time.sleep(2)
-
-    print(f'\nTotal jobs collected : {len(all_jobs)}')
-
-    it_roles = {'programator', 'developer', 'engineer', 'devops', 'cyber', 'qa', 'tester', 'frontend', 'backend', 'fullstack', 'administrator', 'security', 'support'}
-    filtered_jobs = []
-
-    for job in all_jobs:
-        lower_title = job['title'].lower()
-
-        is_it_job = any(role in lower_title for role in it_roles)
-
-        if is_it_job:
-            filtered_jobs.append(job)
-
-    print(f'Jobs matching your tech keywords: {len(filtered_jobs)}')
-
-    save_jobs_to_db(filtered_jobs) 
-
-    generate_market_report()
+        return hash_object.hexdigest()
