@@ -319,6 +319,23 @@ def generate_market_report(db_name = 'jobs.db'):
 
     print('=' * 40 + '\n')
 
+
+    cursor.execute("SELECT work_mode, COUNT(*) FROM jobs WHERE status = 'active' GROUP BY work_mode")
+    mode_counts = cursor.fetchall()
+
+    mode_emojis = {
+        'Remote' : '🏠 REMOTE',
+        'Hybrid' : '🤝 HYBRID',
+        'On-site' : '🏢 ON-SITE'
+    }
+
+    print('=' * 40)
+    print("   🏢 WORK MODE DISTRIBUTION 🏢   ")
+    print("=" * 40)
+    for mode, count in mode_counts:
+        display_name = mode_emojis.get(mode, mode.upper())
+        print(f' {display_name} : {count} jobs' )
+
     connection.close()
 
 if __name__ == "__main__":
