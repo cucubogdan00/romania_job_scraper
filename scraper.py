@@ -150,6 +150,33 @@ def extract_technologies_from_description(job_url, tech_keywords):
         
     return found_tech
 
+def parse_location(location_text):
+
+    if not location_text:
+        return 'N/A', 'On-site'
+    
+    loc_lower = location_text.lower()
+
+    if 'remote' in loc_lower:
+        work_mode = 'Remote'
+    elif 'hybrid' in loc_lower or 'hibrid' in loc_lower:
+        work_mode = 'Hybrid'
+    else:
+        work_mode = 'On-site'
+
+    city_clean = location_text
+    words_to_remove = ['remote', 'Remote', 'hybrid', 'Hybrid', 'hibrid', 'Hibrid', '(', ')', ',']
+
+    for word in words_to_remove:
+        city_clean = city_clean.replace(word, '')
+
+    city_clean = city_clean.strip().strip(',').strip()
+
+    if not city_clean or 'acas' in city_clean.lower():
+        city_clean = 'All' if work_mode == 'Remote' else 'N/A'
+
+    return city_clean, work_mode
+
 def save_jobs_to_db(job_list, db_name = 'jobs.db'):
 
     if not job_list :
@@ -166,9 +193,11 @@ def save_jobs_to_db(job_list, db_name = 'jobs.db'):
         tech_string = ', '.join(job['technologies'])
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
+        city , work_mode = parse_location(job['location'])
+
         query = '''
-            INSERT INTO JOBS (id, title, company, location, link, technologies, date_scraped, source, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO JOBS (id, title, company, location, city, work_mode, link, technologies, date_scraped, source, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT (id) DO UPDATE SET status = 'active' , date_scraped = ?  
           
         '''
@@ -178,6 +207,8 @@ def save_jobs_to_db(job_list, db_name = 'jobs.db'):
             job['title'],
             job['company'],
             job['location'],
+            city,
+            work_mode,
             job['link'],
             tech_string,
             current_time,
@@ -205,6 +236,8 @@ def init_db(db_name = 'jobs.db'):
             title TEXT NOT NULL,
             company TEXT,
             location TEXT,
+            city TEXT,
+            work_mode TEXT,
             link TEXT,
             technologies TEXT,
             date_scraped TEXT,
