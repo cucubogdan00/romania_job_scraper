@@ -85,15 +85,17 @@ class EJobsScraper:
     
         for heading in headings:
 
-            it_roles = {'programator', 'developer', 'engineer', 'devops', 'cyber', 'qa', 'tester', 'frontend', 'backend', 'fullstack', 'administrator', 'security', 'support'}
+            it_roles = {'programator', 'developer', 'engineer', 'devops', 'cyber', 'qa', 'tester', 'frontend', 'backend',
+                        'fullstack', 'administrator', 'security', 'support', 'sysadmin', 'data', 'cloud'}
 
             link_tag = heading.find('a')
             if link_tag:
                 job = self.create_job_blueprint()
                 title_text = link_tag.get_text(strip = True)
                 found_role = any(role in title_text.lower() for role in it_roles) 
+                found_tech_in_title = any(tech in title_text.lower() for tech in tech_keywords)
 
-                if not found_role:
+                if not found_role and found_tech_in_title:
                     continue
 
                 job_url = link_tag.get('href')  

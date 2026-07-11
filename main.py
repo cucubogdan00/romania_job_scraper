@@ -10,7 +10,7 @@ if __name__ == "__main__":
             'rust', 'typescript', 'vue', 'node', 'postgres', 'mongo', 'kubernetes', 'aws', 
             'azure', 'jenkins', 'selenium', 'cypress', 'jmeter', 'wireshark', 'automation',
             'hana', 'fiori', 'btp', 'basis', 'playwright', 'postman', 'ci/cd', 'bash', 'terraform',
-            'c-sharp'
+            'c-sharp', 'embedded', 'microcontroller'
                 }
 
     scraper = EJobsScraper()
