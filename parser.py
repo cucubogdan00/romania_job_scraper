@@ -1,5 +1,6 @@
-from bs4 import BeautifulSoup
+import re
 
+from bs4 import BeautifulSoup
 class JobParser:
 
     def parse_location(self, location_text):
@@ -48,7 +49,12 @@ class JobParser:
         found_tech = []
             
         for keyword in tech_keywords:
-            if keyword in full_text:
+            
+            kw_clean = keyword.lower()
+            kw_escaped = re.escape(kw_clean)
+            pattern = rf'\b{kw_escaped}\b'
+
+            if re.search(pattern, full_text):
                 found_tech.append(keyword)
             
         return found_tech
