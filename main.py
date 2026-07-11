@@ -4,6 +4,15 @@ from database import JobDatabase
 
 if __name__ == "__main__":
 
+    tech_keywords = {
+            'python', 'sap', 'abap', 'cnc', 'siemens', 'java', 'git', 'sql', 'docker', 'linux',
+            'javascript', 'react', 'angular', 'html', 'css', 'php', 'c++', 'c#', 'ruby', 'go', 
+            'rust', 'typescript', 'vue', 'node', 'postgres', 'mongo', 'kubernetes', 'aws', 
+            'azure', 'jenkins', 'selenium', 'cypress', 'jmeter', 'wireshark', 'automation',
+            'hana', 'fiori', 'btp', 'basis', 'playwright', 'postman', 'ci/cd', 'bash', 'terraform',
+            'c-sharp'
+                }
+
     scraper = EJobsScraper()
     db = JobDatabase('jobs.db')
 
@@ -11,8 +20,9 @@ if __name__ == "__main__":
 
     db.check_expired_jobs(scraper.fetch_description_html_fast)
 
-    all_jobs = []
     base_url = 'https://www.ejobs.ro/locuri-de-munca/software'
+
+    total_saved_run = 0
 
     print('Starting Multi-Page Scraping Process...')
 
@@ -24,35 +34,19 @@ if __name__ == "__main__":
     
         print(f'Downloading Page {page_number}...')
         html_data = scraper.fetch_html_content(target_url)
-        page_jobs = scraper.parse_job_cards(html_data)
+        saved_jobs_count = scraper.parse_job_cards(html_data, db, tech_keywords)
+        total_saved_run += saved_jobs_count
 
-        print(f'Successfully extracted {len(page_jobs)} jobs from Page {page_number}.') 
+        print(f'Successfully saved {saved_jobs_count} IT jobs from Page {page_number}.') 
 
-        if len(page_jobs) == 0:
+        if saved_jobs_count == 0:
             print('No more jobs found!Stopping the scraper.')
             break
-
-        all_jobs.extend(page_jobs)
 
         if page_number < 10:
             print('Taking a short break to simulate human behaviour (2 seconds)...')
             time.sleep(2)
 
-    print(f'\nTotal jobs collected : {len(all_jobs)}')
-
-    it_roles = {'programator', 'developer', 'engineer', 'devops', 'cyber', 'qa', 'tester', 'frontend', 'backend', 'fullstack', 'administrator', 'security', 'support'}
-    filtered_jobs = []
-
-    for job in all_jobs:
-        lower_title = job['title'].lower()
-
-        is_it_job = any(role in lower_title for role in it_roles)
-
-        if is_it_job:
-            filtered_jobs.append(job)
-
-    print(f'Jobs matching your tech keywords: {len(filtered_jobs)}')
-
-    db.save_jobs_to_db(filtered_jobs) 
+    print(f'\nTotal IT jobs saved during this run: {total_saved_run}')
 
     db.generate_market_report()

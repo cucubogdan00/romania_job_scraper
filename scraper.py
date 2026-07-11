@@ -74,20 +74,28 @@ class EJobsScraper:
             print(f'There is an Error : {error}')
             return None
 
-    def parse_job_cards(self, html_content):
+    def parse_job_cards(self, html_content, db_object, tech_keywords):
 
-        if html_content == None: return []
+        saved_count = 0
+
+        if html_content == None: return 0
         
-        job_list = []
         soup = BeautifulSoup(html_content, 'html.parser')
         headings = soup.find_all('h2', class_='job-card-content-middle__title')
-
+    
         for heading in headings:
+
+            it_roles = {'programator', 'developer', 'engineer', 'devops', 'cyber', 'qa', 'tester', 'frontend', 'backend', 'fullstack', 'administrator', 'security', 'support'}
 
             link_tag = heading.find('a')
             if link_tag:
                 job = self.create_job_blueprint()
                 title_text = link_tag.get_text(strip = True)
+                found_role = any(role in title_text.lower() for role in it_roles) 
+
+                if not found_role:
+                    continue
+
                 job_url = link_tag.get('href')  
 
                 if job_url and not job_url.startswith('http'):
@@ -107,23 +115,17 @@ class EJobsScraper:
 
                 parser = JobParser()
 
-                tech_keywords = {
-                    'python', 'sap', 'abap', 'cnc', 'siemens', 'java', 'git', 'sql', 'docker', 'linux',
-                    'javascript', 'react', 'angular', 'html', 'css', 'php', 'c++', 'c#', 'ruby', 'go', 
-                    'rust', 'typescript', 'vue', 'node', 'postgres', 'mongo', 'kubernetes', 'aws', 
-                    'azure', 'jenkins', 'selenium', 'cypress', 'jmeter', 'wireshark', 'automation',
-                    'hana', 'fiori', 'btp', 'basis', 'playwright', 'postman', 'ci/cd', 'bash', 'terraform',
-                    'c-sharp'
-                }
                 job['technologies'] = parser.extract_technologies_from_description(job_url, tech_keywords, self.fetch_description_html_fast)
 
                 time.sleep(1.5)
 
                 job['id'] = self.generate_job_id(title_text, company_text)
 
-                job_list.append(job)
+                if job['technologies']:
+                    db_object.save_jobs_to_db([job])
+                    saved_count += 1
 
-        return job_list
+        return saved_count
 
     def generate_job_id(self, title, company):
         
