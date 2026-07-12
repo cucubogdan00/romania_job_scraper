@@ -21,6 +21,7 @@ class JobDatabase:
                 title TEXT NOT NULL,
                 company TEXT,
                 location TEXT,
+                experience TEXT,
                 city TEXT,
                 work_mode TEXT,
                 link TEXT,
@@ -57,8 +58,8 @@ class JobDatabase:
             city , work_mode = parser.parse_location(job['location'])
 
             query = '''
-                INSERT INTO JOBS (id, title, company, location, city, work_mode, link, technologies, date_scraped, source, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO JOBS (id, title, company, location, experience, city, work_mode, link, technologies, date_scraped, source, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT (id) DO UPDATE SET status = 'active' , date_scraped = ?  
             
             '''
@@ -68,6 +69,7 @@ class JobDatabase:
                 job['title'],
                 job['company'],
                 job['location'],
+                job['experience'],
                 city,
                 work_mode,
                 job['link'],
@@ -173,5 +175,17 @@ class JobDatabase:
         for mode, count in mode_counts:
             display_name = mode_emojis.get(mode, mode.upper())
             print(f' {display_name} : {count} jobs' )
+
+        cursor.execute("SELECT experience , COUNT(*) FROM jobs WHERE status = 'active' GROUP BY experience")
+        experience_counts = cursor.fetchall()
+
+        print('\n' + "=" * 40)
+        print("   📊 EXPERIENCE LEVEL DISTRIBUTION 📊   ") 
+        print("=" * 40)
+        for exp_level, count in experience_counts:
+            display_level = exp_level if exp_level else 'UNKNOWN'
+            print(f' 📊{display_level} : {count} jobs')
+
+        print("=" * 40)
 
         connection.close()

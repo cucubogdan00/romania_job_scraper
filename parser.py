@@ -31,20 +31,31 @@ class JobParser:
         return city_clean, work_mode
 
 
-    def extract_technologies_from_description(self, job_url, tech_keywords, fetch_func):
+    def extract_data_from_description(self, job_url, tech_keywords, fetch_func):
 
         job_html = fetch_func(job_url)
 
-        if job_html == None: return []
+        if job_html == None: return [], 'Unknown'
 
         soup = BeautifulSoup(job_html, 'html.parser')
         description_container = soup.find('div' , class_ = 'jobs-show-main-description__section')
+        experience_tags = soup.find_all('a' , class_ = 'jobs-show-main-summaries__summary-link')
 
         if description_container:
             full_text = description_container.get_text(strip = True).lower()
         else:
             body_container = soup.find('body')
             full_text = body_container.get_text(strip = True).lower() if body_container else ""
+
+        experience_text = 'Unknown'
+        for tag in experience_tags:
+            text_clean = tag.get_text(strip = True)
+            text_clean = text_clean.strip(', ')
+            text_lower = text_clean.lower()
+
+            if 'level' in text_lower or 'ani' in text_lower or 'exp' in text_lower:
+                experience_text = text_clean
+                break
 
         found_tech = []
             
@@ -57,4 +68,5 @@ class JobParser:
             if re.search(pattern, full_text):
                 found_tech.append(keyword)
             
-        return found_tech
+        return found_tech , experience_text
+    

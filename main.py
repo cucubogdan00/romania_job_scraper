@@ -11,7 +11,7 @@ if __name__ == "__main__":
             'azure', 'jenkins', 'selenium', 'cypress', 'jmeter', 'wireshark', 'automation',
             'hana', 'fiori', 'btp', 'basis', 'playwright', 'postman', 'ci/cd', 'bash', 'terraform',
             'c-sharp', 'embedded', 'microcontroller'
-                }
+            }
 
     scraper = EJobsScraper()
     db = JobDatabase('jobs.db')

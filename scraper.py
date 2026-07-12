@@ -18,7 +18,8 @@ class EJobsScraper:
             'id': None,              # Will hold the SHA-256 unique hash
             'title': "",             # Will hold the job title string
             'company': "",           # Will hold the company name string
-            'location': "",          # Will hold the city / remote status
+            'location': "", 
+            'experience' : "",         # Will hold the city / remote status
             'link': "",              # Will hold the URL to the job application
             'technologies': []       # Will hold a list of required skills/tech
         }
@@ -109,7 +110,17 @@ class EJobsScraper:
 
                 location_tag = card_parent.find('div', class_= 'job-card-content-middle__info')
                 location_text = location_tag.get_text(strip = True) if location_tag else 'Unknown'
-            
+
+                experience_tag = card_parent.find('div', class_ = 'job-card-content-middle__info')
+                info_tags = card_parent.find('div', class_ = 'job-card-content-middle__info')
+
+                experience_text = 'Unknown'
+                for tag in info_tags:
+                    text_content = tag.get_text(strip = True).lower()
+                    if 'level' in text_content or 'ani' in text_content or 'exp' in text_content:
+                        experience_text = tag.get_text(strip = True)
+                        break
+
                 job['title'] = title_text
                 job['link'] = job_url
                 job['company'] = company_text
@@ -117,7 +128,7 @@ class EJobsScraper:
 
                 parser = JobParser()
 
-                job['technologies'] = parser.extract_technologies_from_description(job_url, tech_keywords, self.fetch_description_html_fast)
+                job['technologies'], job['experience'] = parser.extract_data_from_description(job_url, tech_keywords, self.fetch_description_html_fast)
 
                 time.sleep(1.5)
 
