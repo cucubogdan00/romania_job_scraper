@@ -55,7 +55,9 @@ class JobDatabase:
             tech_string = ', '.join(job['technologies'])
             current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-            city , work_mode = parser.parse_location(job['location'])
+            city , _ = parser.parse_location(job['location'])
+
+            work_mode = job['work_mode']
 
             query = '''
                 INSERT INTO JOBS (id, title, company, location, experience, city, work_mode, link, technologies, date_scraped, source, status)

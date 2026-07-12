@@ -35,7 +35,7 @@ class JobParser:
 
         job_html = fetch_func(job_url)
 
-        if job_html == None: return [], 'Unknown'
+        if job_html == None: return [], 'Unknown', 'Unknown'
 
         soup = BeautifulSoup(job_html, 'html.parser')
         description_container = soup.find('div' , class_ = 'jobs-show-main-description__section')
@@ -48,14 +48,20 @@ class JobParser:
             full_text = body_container.get_text(strip = True).lower() if body_container else ""
 
         experience_text = 'Unknown'
+        work_mode_text = 'On-site'
+
         for tag in experience_tags:
-            text_clean = tag.get_text(strip = True)
-            text_clean = text_clean.strip(', ')
+            text_clean = tag.get_text(strip = True).strip(', ')
             text_lower = text_clean.lower()
 
             if 'level' in text_lower or 'ani' in text_lower or 'exp' in text_lower:
                 experience_text = text_clean
-                break
+                continue
+
+            if 'remote' in text_lower:
+                work_mode_text = 'Remote'
+            elif 'hibrid' in text_lower or 'hybrid' in text_lower:
+                work_mode_text = 'Hybrid'
 
         found_tech = []
             
@@ -68,5 +74,4 @@ class JobParser:
             if re.search(pattern, full_text):
                 found_tech.append(keyword)
             
-        return found_tech , experience_text
-    
+        return found_tech , experience_text, work_mode_text
