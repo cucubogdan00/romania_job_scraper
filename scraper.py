@@ -119,7 +119,13 @@ class EJobsScraper:
 
                 parser = JobParser()
 
-                job['technologies'], job['experience'], job['work_mode']= parser.extract_data_from_description(job_url, tech_keywords, self.fetch_description_html_fast)
+                try:
+                    job['technologies'], job['experience'], job['work_mode']= parser.extract_data_from_description(job_url, tech_keywords, self.fetch_description_html_fast)
+                except Exception as e:
+                    print(f"   [Warning] Error parsing description for job '{title_text}': {e}")
+                    job['technologies'] = []
+                    job['experience'] = 'Unknown'
+                    job['work_mode'] = 'On-site'               
 
                 time.sleep(1.5)
 
