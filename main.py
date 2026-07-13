@@ -1,4 +1,5 @@
 import time
+from bs4 import BeautifulSoup
 from scraper import EJobsScraper
 from database import JobDatabase
 
@@ -26,26 +27,41 @@ if __name__ == "__main__":
 
     print('Starting Multi-Page Scraping Process...')
 
-    for page_number in range(1,2):
-        if page_number == 1:
-            target_url = base_url
-        else:
-            target_url = f'{base_url}/pagina{page_number}'
-    
-        print(f'Downloading Page {page_number}...')
-        html_data = scraper.fetch_html_content(target_url)
+    page_number = 1
+    all_saved_count = 0
+
+    while page_number <= 30:
+        print(f"Downloading Page {page_number}...")
+
+        current_url = f'{base_url}/pagina{page_number}/'
+
+        html_data = scraper.fetch_html_content(current_url)
+
+        if not html_data:
+            print(f"[Error] Could not fetch HTML content for page {page_number}. Stopping.")
+            break
+
         saved_jobs_count = scraper.parse_job_cards(html_data, db, tech_keywords)
         total_saved_run += saved_jobs_count
 
         print(f'Successfully saved {saved_jobs_count} IT jobs from Page {page_number}.') 
 
-        if saved_jobs_count == 0:
-            print('No more jobs found!Stopping the scraper.')
-            break
+        try:
+            soup = BeautifulSoup(html_data, 'html.parser')
+            
+            next_page_exists = soup.find(lambda tag : tag.name and 'Pagina următoare' in tag.get_text())
 
-        if page_number < 10:
-            print('Taking a short break to simulate human behaviour (2 seconds)...')
-            time.sleep(2)
+            if next_page_exists:
+                print("-> Text 'Pagina următoare' detected. Preparing to advance...")
+                page_number += 1
+                time.sleep(2)
+            else:
+                print("\n[Pagination] No 'Pagina următoare' text found. We have reached the final page!")
+                break 
+        
+        except Exception as e:
+            print(f"[Pagination Warning] Could not check next page: {e}. Stopping run to be safe.")
+            break
 
     print(f'\nTotal IT jobs saved during this run: {total_saved_run}')
 

@@ -85,6 +85,8 @@ class EJobsScraper:
         soup = BeautifulSoup(html_content, 'html.parser')
         headings = soup.find_all('h2', class_='job-card-content-middle__title')
     
+        page_jobs = []
+
         for heading in headings:
 
             it_roles = {'programator', 'developer', 'engineer', 'devops', 'cyber', 'qa', 'tester', 'frontend', 'backend',
@@ -132,10 +134,13 @@ class EJobsScraper:
                 job['id'] = self.generate_job_id(title_text, company_text)
 
                 if job['technologies']:
-                    db_object.save_jobs_to_db([job])
-                    saved_count += 1
+                    page_jobs.append(job)
 
-        return saved_count
+        if page_jobs:
+            db_object.save_jobs_to_db(page_jobs)
+            return len(page_jobs)
+
+        return 0
 
     def generate_job_id(self, title, company):
         

@@ -54,7 +54,7 @@ class JobParser:
             text_clean = tag.get_text(strip = True).strip(', ')
             text_lower = text_clean.lower()
 
-            if 'level' in text_lower or 'ani' in text_lower or 'exp' in text_lower:
+            if 'level' in text_lower or 'ani' in text_lower or 'experien' in text_lower:
                 experience_text = text_clean
                 continue
 
