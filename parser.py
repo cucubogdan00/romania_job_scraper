@@ -63,6 +63,17 @@ class JobParser:
             elif 'hibrid' in text_lower or 'hybrid' in text_lower:
                 work_mode_text = 'Hybrid'
 
+        valid_experience_levels = {
+            'Entry-Level (< 2 ani)',
+            'Mid-Level (2-5 ani)',
+            'Senior-Level (> 5 ani)'
+        }
+
+        if experience_text == 'Fără experiență':
+            experience_text = 'Entry-Level (< 2 ani)'
+        elif experience_text not in valid_experience_levels:
+            experience_text = 'Unknown'
+
         found_tech = []
             
         for keyword in tech_keywords:

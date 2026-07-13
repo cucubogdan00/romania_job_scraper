@@ -21,47 +21,57 @@ if __name__ == "__main__":
 
     db.check_expired_jobs(scraper.fetch_description_html_fast)
 
-    base_url = 'https://www.ejobs.ro/locuri-de-munca/software'
+    categories = [
+        'it-software',
+        'internet-e-commerce',
+        'it-hardware',
+        'telecomunicatii',
+        'inginerie',
+        'productie'
+    ]
 
     total_saved_run = 0
 
-    print('Starting Multi-Page Scraping Process...')
+    print('Starting Multi-Category Scraping Process...')
 
-    page_number = 1
-    all_saved_count = 0
+    for category in categories:
+        print(f"\n🚀 Switching to category: {category.upper()} 🚀")
+        base_url = f'https://www.ejobs.ro/locuri-de-munca/{category}'
 
-    while page_number <= 30:
-        print(f"Downloading Page {page_number}...")
+        page_number = 1
+        all_saved_count = 0
 
-        current_url = f'{base_url}/pagina{page_number}/'
+        while page_number <= 30:
+            print(f"Downloading {category} - Page {page_number}...")
+            current_url = f'{base_url}/pagina{page_number}/'
 
-        html_data = scraper.fetch_html_content(current_url)
+            html_data = scraper.fetch_html_content(current_url)
 
-        if not html_data:
-            print(f"[Error] Could not fetch HTML content for page {page_number}. Stopping.")
-            break
+            if not html_data:
+                print(f"[Error] Could not fetch HTML for {category} page {page_number}. Skipping category")
+                break
 
-        saved_jobs_count = scraper.parse_job_cards(html_data, db, tech_keywords)
-        total_saved_run += saved_jobs_count
+            saved_jobs_count = scraper.parse_job_cards(html_data, db, tech_keywords)
+            total_saved_run += saved_jobs_count
 
-        print(f'Successfully saved {saved_jobs_count} IT jobs from Page {page_number}.') 
+            print(f'Successfully saved {saved_jobs_count} IT jobs from {category} - Page {page_number}.') 
 
-        try:
-            soup = BeautifulSoup(html_data, 'html.parser')
+            try:
+                soup = BeautifulSoup(html_data, 'html.parser')
+                
+                next_page_exists = soup.find(lambda tag : tag.name and 'Pagina următoare' in tag.get_text())
+
+                if next_page_exists:
+                    print("-> Text 'Pagina următoare' detected. Preparing to advance...")
+                    page_number += 1
+                    time.sleep(2)
+                else:
+                    print(f"\n[Pagination] Reached the final page for category {category}")
+                    break 
             
-            next_page_exists = soup.find(lambda tag : tag.name and 'Pagina următoare' in tag.get_text())
-
-            if next_page_exists:
-                print("-> Text 'Pagina următoare' detected. Preparing to advance...")
-                page_number += 1
-                time.sleep(2)
-            else:
-                print("\n[Pagination] No 'Pagina următoare' text found. We have reached the final page!")
-                break 
-        
-        except Exception as e:
-            print(f"[Pagination Warning] Could not check next page: {e}. Stopping run to be safe.")
-            break
+            except Exception as e:
+                print(f"[Pagination Warning] Error checking next page: {e}. Skipping category.")
+                break
 
     print(f'\nTotal IT jobs saved during this run: {total_saved_run}')
 
