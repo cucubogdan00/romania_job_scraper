@@ -1,32 +1,15 @@
 import time 
-import hashlib
-import requests
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from base_scraper import BaseScraper
 from parser import JobParser
 from database import JobDatabase
 
-class BestJobsScraper:
+class BestJobsScraper(BaseScraper):
 
-    def create_job_blueprint(self):
-    
-        job_structure = {
-            'id': None,              # Will hold the SHA-256 unique hash
-            'title': "",             # Will hold the job title string
-            'company': "",           # Will hold the company name string
-            'location': "",          # Will hold the city / remote status
-            'experience' : "",       # Will hold the experience level (Entry-level, Mid-level, Senior-level)
-            'work_mode' : "",        # Will hold the work_mode (Remote, Hybrid, On-site)
-            'link': "",              # Will hold the URL to the job application
-            'technologies': []       # Will hold a list of required skills/tech
-        }
-        
-        return job_structure
-    
-    
     def fetch_html_content(self, url):
 
         chrome_options = Options()
@@ -87,35 +70,13 @@ class BestJobsScraper:
     def fetch_description_html_selenium(self, url, driver):
         try:
             driver.get(url)
-            time.sleep(1.2)  # Pauză mică să apuce să încarce textul jobului
+            time.sleep(1.2) 
             return driver.page_source
         except Exception as error:
-            print(f"Eroare la încărcarea descrierii cu Selenium: {error}")
+            print(f"[Selenium Error] Error loading description via Selenium: {error}")
             return None 
-        
-        
-    def fetch_description_html_fast(self, url):
-
-        headers = {'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
-
-        try: 
-            response = requests.get(url, headers = headers,  timeout = 10)
-            response.raise_for_status()
-            response.encoding = 'utf-8'
-            return response.text
-        except requests.exceptions.HTTPError as http_err:
-            if http_err.response.status_code == 429:
-                return 'BLOCKED_429'
-            else:
-                print(f'[HTTP Error] Status: {http_err}')
-                return None
-        except Exception as error:
-            print(f'[Request Error] Read timed out or network error: {error}')
-            return None
-        
+            
     def parse_job_cards(self, html_content, db_object, tech_keywords, driver):
-
-        saved_count = 0
 
         if html_content == None: return 0
         
@@ -199,7 +160,7 @@ class BestJobsScraper:
                         job['experience'] = 'Senior-Level (> 5 ani)'
           
 
-                time.sleep(1.5)
+                time.sleep(2)
 
                 job['id'] = self.generate_job_id(title_text, company_text)
 
@@ -211,13 +172,6 @@ class BestJobsScraper:
             return len(page_jobs)
 
         return 0
-    
-
-    def generate_job_id(self, title, company):
-        
-        combined_text = title + company
-        hash_object = hashlib.sha256(combined_text.encode('utf-8'))
-        return hash_object.hexdigest()
 
 if __name__ == "__main__":
     real_test_db = JobDatabase("test_bestjobs.db") 

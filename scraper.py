@@ -1,32 +1,13 @@
-import requests
-import hashlib
-import csv
 import time
-import sqlite3
 
 from parser import JobParser
+from base_scraper import BaseScraper
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from datetime import datetime
 
-class EJobsScraper:
+class EJobsScraper(BaseScraper):
         
-    def create_job_blueprint(self):
-    
-        job_structure = {
-            'id': None,              # Will hold the SHA-256 unique hash
-            'title': "",             # Will hold the job title string
-            'company': "",           # Will hold the company name string
-            'location': "",          # Will hold the city / remote status
-            'experience' : "",       # Will hold the experience level (Entry-level, Mid-level, Senior-level)
-            'work_mode' : "",        # Will hold the work_mode (Remote, Hybrid, On-site)
-            'link': "",              # Will hold the URL to the job application
-            'technologies': []       # Will hold a list of required skills/tech
-        }
-        
-        return job_structure
-
     def fetch_html_content(self, url):
 
         chrome_options = Options()
@@ -57,28 +38,7 @@ class EJobsScraper:
             print(f'Selenium Automation Error: {error}')
             return None
         
-    def fetch_description_html_fast(self, url):
-
-        headers = {'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
-
-        try: 
-            response = requests.get(url, headers = headers,  timeout = 10)
-            response.raise_for_status()
-
-            return response.text
-        except requests.exceptions.HTTPError as http_err:
-            if http_err.response.status_code == 429:
-                return 'BLOCKED_429'
-            else:
-                print(f'Error HTTP : {http_err}')
-                return None
-        except Exception as error:
-            print(f'There is an Error : {error}')
-            return None
-
     def parse_job_cards(self, html_content, db_object, tech_keywords):
-
-        saved_count = 0
 
         if html_content == None: return 0
         
@@ -141,10 +101,3 @@ class EJobsScraper:
             return len(page_jobs)
 
         return 0
-
-    def generate_job_id(self, title, company):
-        
-        combined_text = title + company
-        hash_object = hashlib.sha256(combined_text.encode('utf-8'))
-
-        return hash_object.hexdigest()
