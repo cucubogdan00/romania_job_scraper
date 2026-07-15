@@ -1,5 +1,6 @@
 import sqlite3
 import time
+import logging
 
 from parser import JobParser
 from datetime import datetime
@@ -34,13 +35,13 @@ class JobDatabase:
 
         connection.commit()
         connection.close()
-        print(f'[SQL Database] Initialized successfully. Table "jobs" is ready.')
+        logging.info(f'[SQL Database] Initialized successfully. Table "jobs" is ready.')
 
         
     def save_jobs_to_db(self, job_list, source_name = 'eJobs'):
 
         if not job_list :
-            print('[SQL] No jobs to save.')
+            logging.info('[SQL] No jobs to save.')
             return
         
         connection = sqlite3.connect(self.db_name)
@@ -87,12 +88,12 @@ class JobDatabase:
         connection.commit()
         connection.close()
 
-        print(f'[SQL Database] Done! Out of {len(job_list)} filtered jobs, {saved_count} were NEW and successfully saved.')
+        logging.info(f'[SQL Database] Done! Out of {len(job_list)} filtered jobs, {saved_count} were NEW and successfully saved.')
 
 
     def check_expired_jobs(self, fetch_func):
 
-        print('\n[Checker] Starting verification of active jobs for expiration...')
+        logging.info('\n[Checker] Starting verification of active jobs for expiration...')
 
         connection = sqlite3.connect(self.db_name)
         cursor = connection.cursor()
@@ -101,23 +102,23 @@ class JobDatabase:
         active_jobs = cursor.fetchall()
 
         if not active_jobs:
-            print('[Checker] No active jobs found in the database to verify.')
+            logging.info('[Checker] No active jobs found in the database to verify.')
             connection.close()
             return
         
-        print(f'[Checker] Found {len(active_jobs)} active jobs to check on the website.')
+        logging.info(f'[Checker] Found {len(active_jobs)} active jobs to check on the website.')
 
         expired_count = 0
 
         for job_id, job_url, job_title in active_jobs:
-            print(f'       [Checking] "{job_title}"...')
+            logging.info(f'       [Checking] "{job_title}"...')
 
             job_html = fetch_func(job_url)
 
             time.sleep(1.5)
 
             if job_html == 'BLOCKED_429':
-                print('[Warning] 429 Too Many Requests detected. Stopping verification loop to protect database integrity.')
+                logging.warning('[Warning] 429 Too Many Requests detected. Stopping verification loop to protect database integrity.')
                 break
 
             if job_html == None or 'anuntul nu mai este activ' in job_html.lower() or 'aceasta pagina a expirat' in job_html.lower():
@@ -151,14 +152,14 @@ class JobDatabase:
                         tech_counts[tech] = 1
     
         sorted_tech = sorted(tech_counts.items() , key = lambda item : item[1], reverse = True)
-        print('\n' + "=" * 40)
-        print('   📊 ACTIVE JOB MARKET REPORT 📊   ')
-        print('=' * 40)
+        logging.info('\n' + "=" * 40)
+        logging.info('   📊 ACTIVE JOB MARKET REPORT 📊   ')
+        logging.info('=' * 40)
 
         for technology, count in sorted_tech:
-            print(f' {technology.upper()} : {count} jobs')
+            logging.info(f' {technology.upper()} : {count} jobs')
 
-        print('=' * 40 + '\n')
+        logging.info('=' * 40 + '\n')
 
 
         cursor.execute("SELECT work_mode, COUNT(*) FROM jobs WHERE status = 'active' GROUP BY work_mode")
@@ -170,23 +171,23 @@ class JobDatabase:
             'On-site' : '🏢 ON-SITE'
         }
 
-        print('=' * 40)
-        print("   🏢 WORK MODE DISTRIBUTION 🏢   ")
-        print("=" * 40)
+        logging.info('=' * 40)
+        logging.info("   🏢 WORK MODE DISTRIBUTION 🏢   ")
+        logging.info("=" * 40)
         for mode, count in mode_counts:
             display_name = mode_emojis.get(mode, mode.upper())
-            print(f' {display_name} : {count} jobs' )
+            logging.info(f' {display_name} : {count} jobs' )
 
         cursor.execute("SELECT experience , COUNT(*) FROM jobs WHERE status = 'active' GROUP BY experience")
         experience_counts = cursor.fetchall()
 
-        print('\n' + "=" * 40)
-        print("   📊 EXPERIENCE LEVEL DISTRIBUTION 📊   ") 
-        print("=" * 40)
+        logging.info('\n' + "=" * 40)
+        logging.info("   📊 EXPERIENCE LEVEL DISTRIBUTION 📊   ") 
+        logging.info("=" * 40)
         for exp_level, count in experience_counts:
             display_level = exp_level if exp_level else 'UNKNOWN'
-            print(f' 📊{display_level} : {count} jobs')
+            logging.info(f' 📊{display_level} : {count} jobs')
 
-        print("=" * 40)
+        logging.info("=" * 40)
 
         connection.close()

@@ -1,6 +1,6 @@
 import hashlib
 import requests
-
+import logging
 class BaseScraper:
 
     def create_job_blueprint(self):
@@ -39,9 +39,9 @@ class BaseScraper:
             if http_err.response.status_code == 429:
                 return 'BLOCKED_429'
             else:
-                print(f'[HTTP Error] Status: {http_err}')
+                logging.error(f'[HTTP Error] Status: {http_err}')
                 return None
         except Exception as error:
-            print(f'[Request Error] Read timed out or network error: {error}')
+            logging.error(f'[Request Error] Read timed out or network error: {error}')
             return None
     

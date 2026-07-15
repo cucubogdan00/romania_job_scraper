@@ -1,4 +1,5 @@
 import time
+import logging
 
 from parser import JobParser
 from base_scraper import BaseScraper
@@ -31,7 +32,7 @@ class EJobsScraper(BaseScraper):
             for i in range(7):
                 current_pixel = (i + 1) * 1500
                 driver.execute_script(f'window.scrollTo(0, {current_pixel});')
-                print(f'      [Selenium] Incremental scroll to {current_pixel}px ({i+1}/7)...')
+                logging.info(f'      [Selenium] Incremental scroll to {current_pixel}px ({i+1}/7)...')
 
                 time.sleep(1.5)
             
@@ -42,7 +43,7 @@ class EJobsScraper(BaseScraper):
             return full_html
 
         except Exception as error:
-            print(f'Selenium Automation Error: {error}')
+            logging.exception(f'Selenium Automation Error: {error}')
             return None
         
     def parse_job_cards(self, html_content, db_object, tech_keywords):
@@ -91,7 +92,7 @@ class EJobsScraper(BaseScraper):
                 try:
                     job['technologies'], job['experience'], job['work_mode']= parser.extract_data_from_description(job_url, tech_keywords, self.fetch_description_html_fast)
                 except Exception as e:
-                    print(f"   [Warning] Error parsing description for job '{title_text}': {e}")
+                    logging.warning(f"   [Warning] Error parsing description for job '{title_text}': {e}")
                     job['technologies'] = []
                     job['experience'] = 'Unknown'
                     job['work_mode'] = 'On-site'               

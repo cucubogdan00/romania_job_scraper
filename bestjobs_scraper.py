@@ -1,4 +1,5 @@
 import time 
+import logging
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -33,7 +34,7 @@ class BestJobsScraper(BaseScraper):
             click_count = 0
             max_clicks = 2
 
-            print("   [Selenium] Starting progressive manual scroll and click loop...")
+            logging.info("   [Selenium] Starting progressive manual scroll and click loop...")
 
             while click_count < max_clicks:
 
@@ -53,25 +54,25 @@ class BestJobsScraper(BaseScraper):
                         time.sleep(1)
                         button.click()
                         click_count += 1
-                        print(f"   [Selenium] Clicked 'Load more' ({click_count}/{max_clicks}). Loading next batch...")                
+                        logging.info(f"   [Selenium] Clicked 'Load more' ({click_count}/{max_clicks}). Loading next batch...")                
                         time.sleep(3)
                     else:
-                        print("   [Pagination] 'Load more' button is hidden. Reached the end.")
+                        logging.info("   [Pagination] 'Load more' button is hidden. Reached the end.")
                         break
                     
                 except Exception:
-                    print("   [Pagination] Reached the end of the category (Button not found anymore).")
+                    logging.info("   [Pagination] Reached the end of the category (Button not found anymore).")
                     break
                         
             full_html = driver.page_source
             soup = BeautifulSoup(full_html, 'html.parser')
             job_links = soup.find_all('a', class_ = 'absolute inset-0 z-1')
-            print(f"\n[Soup] Total jobs loaded after deep scroll: {len(job_links)} !")
+            logging.info(f"\n[Soup] Total jobs loaded after deep scroll: {len(job_links)} !")
 
             return full_html, driver
 
         except Exception as error:
-            print(f'Selenium Automation Error during fetch: {error}')        
+            logging.exception(f'Selenium Automation Error during fetch: {error}')        
             return None, None
     
     def fetch_description_html_selenium(self, url, driver):
@@ -80,7 +81,7 @@ class BestJobsScraper(BaseScraper):
             time.sleep(1.2) 
             return driver.page_source
         except Exception as error:
-            print(f"[Selenium Error] Error loading description via Selenium: {error}")
+            logging.exception(f"[Selenium Error] Error loading description via Selenium: {error}")
             return None 
             
     def parse_job_cards(self, html_content, db_object, tech_keywords, driver):
@@ -138,7 +139,7 @@ class BestJobsScraper(BaseScraper):
                         job['location'] = real_location
 
                 except Exception as e:
-                    print(f"   [Warning] Error parsing description: {e}")
+                    logging.warning(f"   [Warning] Error parsing description: {e}")
                     job['technologies'] = []
                     job['experience'] = 'Unknown'
                     job['work_mode'] = 'On-site' 
