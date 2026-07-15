@@ -1,7 +1,6 @@
 jobs.db
-
+*.db
 .DS_Store
-
 .venv/
 __pycache__/
-*.pyc 
+*.pyc

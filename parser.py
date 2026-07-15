@@ -10,6 +10,10 @@ class JobParser:
         
         loc_lower = location_text.lower()
 
+        experience_keywords = ['junior', 'middle', 'senior', 'entry', 'executive', 'ani', 'experien']
+        if any(exp_kw in loc_lower for exp_kw in experience_keywords):
+            return 'Unknown', 'On-site'
+
         if 'remote' in loc_lower:
             work_mode = 'Remote'
         elif 'hybrid' in loc_lower or 'hibrid' in loc_lower:
@@ -17,18 +21,18 @@ class JobParser:
         else:
             work_mode = 'On-site'
 
-        city_clean = location_text
+        clean_city = location_text
         words_to_remove = ['remote', 'Remote', 'hybrid', 'Hybrid', 'hibrid', 'Hibrid', '(', ')', ',']
 
         for word in words_to_remove:
-            city_clean = city_clean.replace(word, '')
+            clean_city = clean_city.replace(word, '')
 
-        city_clean = city_clean.strip().strip(',').strip()
+        clean_city = clean_city.strip().strip(',').strip()
 
-        if not city_clean or 'acas' in city_clean.lower():
-            city_clean = 'All' if work_mode == 'Remote' else 'N/A'
+        if not clean_city or 'acas' in clean_city.lower():
+            clean_city = 'All' if work_mode == 'Remote' else 'N/A'
 
-        return city_clean, work_mode
+        return clean_city, work_mode
 
 
     def extract_data_from_description(self, job_url, tech_keywords, fetch_func):
@@ -86,3 +90,76 @@ class JobParser:
                 found_tech.append(keyword)
             
         return found_tech , experience_text, work_mode_text
+    
+    def extract_data_from_bestjobs_description(self, job_url, tech_keywords, fetch_func):
+
+        job_html = fetch_func(job_url)
+
+        if job_html is None:
+            return [], 'Unknown', 'Unknown', 'Unknown'
+        
+        soup = BeautifulSoup(job_html, 'html.parser')
+        description_container = soup.find('div' , class_ = 'job-description')
+        
+        if description_container:
+            full_text = description_container.get_text(strip = True).lower()
+        else:
+            body_container = soup.find('body')
+            full_text = body_container.get_text(strip = True).lower() if body_container else ""
+
+        work_mode_text = 'On-site'
+        location_text = 'Unknown'
+        experience_text = 'Unknown'
+
+        detail_blocks = soup.find_all('div', class_ = 'flex-1 text-left')
+        for block in detail_blocks:
+            block_text = block.get_text(strip = True).lower()
+
+            remote_span = block.find('span', class_ = 'font-bold')
+            if remote_span and 'remote' in remote_span.get_text(strip = True).lower():
+                work_mode_text = 'Remote'
+                location_text = 'Remote'
+                continue
+            
+            if 'hibrid' in block_text or 'hybrid' in block_text:
+                work_mode_text = "Hybrid"
+
+            location_link = block.find('a', class_ = 'hover:text-ink')
+            if location_link:
+                location_text = location_link.get_text(strip = True)
+
+        experience_containers = soup.find_all('div', class_ = 'ml-2')
+        for container in experience_containers:
+            parent = container.find_parent('div', class_ = 'flex')
+            if parent:
+                experience_link = container.find('a', class_ = 'hover:text-ink')
+                if experience_link:
+                    raw_exp = experience_link.get_text(strip = True).lower()
+                    if 'entry' in raw_exp or '0-2' in raw_exp or 'fără' in raw_exp:
+                        experience_text = 'Entry-Level (< 2 ani)'
+                        break
+                    elif 'mid' in raw_exp or '2-5' in raw_exp or 'middle' in raw_exp:
+                        experience_text = 'Mid-Level (2-5 ani)'
+                        break
+                    elif 'senior' in raw_exp or '5-10' in raw_exp:
+                        experience_text = 'Senior-Level (> 5 ani)'
+                        break
+        
+        if experience_text == 'Unknown':
+            if 'senior' in full_text or 'lead' in full_text or 'principal' in full_text:
+                experience_text = 'Senior-Level (> 5 ani)'
+            elif 'mid' in full_text:
+                experience_text = 'Mid-Level (2-5 ani)'
+            elif 'junior' in full_text or 'entry' in full_text or 'fără experiență' in full_text:
+                experience_text = 'Entry-Level (< 2 ani)'
+
+        found_tech = []
+        for keyword in tech_keywords:
+            kw_clean = keyword.lower()
+            kw_escaped = re.escape(kw_clean)
+            pattern = rf'\b{kw_escaped}\b'
+
+            if re.search(pattern, full_text):
+                found_tech.append(keyword)
+        
+        return found_tech, experience_text, work_mode_text, location_text

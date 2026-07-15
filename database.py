@@ -37,7 +37,7 @@ class JobDatabase:
         print(f'[SQL Database] Initialized successfully. Table "jobs" is ready.')
 
         
-    def save_jobs_to_db(self, job_list):
+    def save_jobs_to_db(self, job_list, source_name = 'eJobs'):
 
         if not job_list :
             print('[SQL] No jobs to save.')
@@ -55,12 +55,12 @@ class JobDatabase:
             tech_string = ', '.join(job['technologies'])
             current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-            city , work_mode = parser.parse_location(job['location'])
+            extracted_city , extracted_work_mode = parser.parse_location(job['location'])
 
             query = '''
-                INSERT INTO JOBS (id, title, company, location, experience, city, work_mode, link, technologies, date_scraped, source, status)
+                INSERT INTO jobs (id, title, company, location, experience, city, work_mode, link, technologies, date_scraped, source, status)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT (id) DO UPDATE SET status = 'active' , date_scraped = ?  
+                ON CONFLICT (id) DO UPDATE SET status = 'active' , date_scraped = ?, source = ?
             
             '''
 
@@ -70,14 +70,15 @@ class JobDatabase:
                 job['company'],
                 job['location'],
                 job['experience'],
-                city,
-                work_mode,
+                extracted_city,
+                extracted_work_mode,
                 job['link'],
                 tech_string,
                 current_time,
-                'eJobs',
+                source_name,
                 'active',
-                current_time
+                current_time,
+                source_name
             ))
 
             if cursor.rowcount > 0: 
