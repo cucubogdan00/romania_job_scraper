@@ -34,22 +34,22 @@ if __name__ == "__main__":
 
     db.init_db()
 
-    #db.check_expired_jobs(ejobs_scraper.fetch_description_html_fast)
+    db.check_expired_jobs(ejobs_scraper.fetch_description_html_fast)
 
     ejobs_categories = [
         'it-software',
-      #  'internet-e-commerce',
-      #  'it-hardware',
-      #  'telecomunicatii',
-      #  'inginerie',
-      #  'productie'
+        'internet-e-commerce',
+        'it-hardware',
+        'telecomunicatii',
+        'inginerie',
+        'productie'
     ]
 
     bestjobs_categories = [
         'it',
-        #'telecom'
-        #'engineering',
-        #'production',
+        'telecom'
+        'engineering',
+        'production',
     ]
 
     total_saved_run = 0
