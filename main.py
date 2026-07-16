@@ -63,7 +63,7 @@ if __name__ == "__main__":
         page_number = 1
         all_saved_count = 0
 
-        while page_number <= 1:
+        while True:
             logging.info(f"Downloading {category} - Page {page_number}...")
             current_url = f'{base_url}/pagina{page_number}/'
 
