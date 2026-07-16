@@ -1,0 +1,46 @@
+name: Run Romania Job Scraper Daily
+
+on:
+  schedule:
+    - cron: '0 1 * * *'
+  workflow_dispatch: 
+
+jobs:
+  scrape_and_commit:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        persist-credentials: true 
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Build Docker Image
+      run: |
+        docker build -t romania_job_scraper .
+
+    - name: Run Scraper Container
+      run: |
+        touch jobs.db scraper.log
+        
+        docker run --rm \
+          -v $(pwd)/jobs.db:/app/jobs.db \
+          -v $(pwd)/scraper.log:/app/scraper.log \
+          romania_job_scraper
+
+    - name: Commit and Push Database Updates
+      run: |
+        git config --global user.name "GitHub Action Bot"
+        git config --global user.email "actions@github.com"
+        
+        git add jobs.db scraper.log
+        
+        if git diff --staged --quiet; then
+          echo "No new jobs found. Database is up to date."
+        else
+          git commit -m "Data: Auto-update jobs database and logs [Skip CI]"
+          git push origin main
+        fi
