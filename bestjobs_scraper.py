@@ -32,10 +32,11 @@ class BestJobsScraper(BaseScraper):
             time.sleep(4)
 
             click_count = 0
+            max_clicks = 50
 
             logging.info("   [Selenium] Starting progressive manual scroll and click loop...")
 
-            while True:
+            while click_count < max_clicks:
 
                 last_height = driver.execute_script('return document.body.scrollHeight')
 
@@ -53,7 +54,7 @@ class BestJobsScraper(BaseScraper):
                         time.sleep(1)
                         button.click()
                         click_count += 1
-                        logging.info(f"   [Selenium] Clicked 'Load more' ({click_count}). Loading next batch...")
+                        logging.info(f"   [Selenium] Clicked 'Load more' ({click_count}/{max_clicks}). Loading next batch...")
                         time.sleep(3)
                     else:
                         logging.info("   [Pagination] 'Load more' button is hidden. Reached the end.")
