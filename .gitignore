@@ -1,6 +1,9 @@
-jobs.db
+!jobs.db
+!scraper.log
+
 *.db
 *.log
+
 .DS_Store
 .venv/
 __pycache__/
