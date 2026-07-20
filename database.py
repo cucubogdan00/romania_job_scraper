@@ -82,8 +82,7 @@ class JobDatabase:
                 source_name
             ))
 
-            if cursor.rowcount > 0: 
-                saved_count += 1
+            saved_count += 1
 
         connection.commit()
         connection.close()

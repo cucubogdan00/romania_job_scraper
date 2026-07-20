@@ -1,5 +1,7 @@
 import time 
 import logging
+import asyncio
+import aiohttp
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -22,12 +24,9 @@ class BestJobsScraper(BaseScraper):
 
         chrome_options.add_argument('--no-sandbox')
         chrome_options.add_argument('--disable-dev-shm-usage')
-        chrome_options.binary_location = '/usr/bin/chromium'
-
-        service = Service(executable_path='/usr/bin/chromedriver')
         
         try:
-            driver = webdriver.Chrome(service=service, options=chrome_options)
+            driver = webdriver.Chrome(options=chrome_options)
             driver.get(url)
             time.sleep(4)
 
@@ -95,9 +94,6 @@ class BestJobsScraper(BaseScraper):
 
         for link_tag in headings:
 
-            it_roles = {'programator', 'developer', 'engineer', 'devops', 'cyber', 'qa', 'tester', 'frontend', 'backend',
-                        'fullstack', 'administrator', 'security', 'support', 'sysadmin', 'data', 'cloud'}
-
             if link_tag:
                 job = self.create_job_blueprint()
 
@@ -112,12 +108,7 @@ class BestJobsScraper(BaseScraper):
 
                 title_tag = card_parent.find('h2', class_ = 'line-clamp-2')
                 title_text = title_tag.get_text(strip = True) if title_tag else 'Unknown'
-                found_role = any(role in title_text.lower() for role in it_roles) 
-                found_tech_in_title = any(tech in title_text.lower() for tech in tech_keywords)
-
-                if not found_role and found_tech_in_title:
-                    continue
-
+               
                 company_tag = card_parent.find('div', class_ = 'text-ink-medium')
                 company_text = company_tag.get_text(strip = True) if company_tag else 'Unknown'
 
@@ -129,57 +120,72 @@ class BestJobsScraper(BaseScraper):
                 job['company'] = company_text
                 job['location'] = 'Unknown'
 
-                parser = JobParser()
-
-                try:
-                    fetch_func = self.fetch_description_html_fast
-                    job['technologies'], job['experience'], job['work_mode'], real_location = parser.extract_data_from_bestjobs_description(job_url, tech_keywords, fetch_func)
-                
-                    if real_location and real_location != 'Unknown':
-                        job['location'] = real_location
-
-                except Exception as e:
-                    logging.warning(f"   [Warning] Error parsing description: {e}")
-                    job['technologies'] = []
-                    job['experience'] = 'Unknown'
-                    job['work_mode'] = 'On-site' 
-                    job['location'] = 'Unknown'   
-
-                if job['location'] == 'Unknown' and location_text and location_text != 'Unknown':
-                    exp_keywords = ['junior', 'middle', 'senior', 'entry', 'executive', 'ani', 'experien']
-                    if not any(exp_kw in location_text.lower() for exp_kw in exp_keywords) and not any(char.isdigit() for char in location_text):
-                        job['location'] = location_text
-                
-                if job['work_mode'] in ['On-site', 'Unknown'] and location_text:
-                    loc_lower = location_text.lower()
-                    if 'remote' in loc_lower:
-                        job['work_mode'] = 'Remote'
-                        job['location'] = 'Remote'
-                    elif 'hibrid' in loc_lower or 'hybrid' in loc_lower:
-                        job['work_mode'] = 'Hybrid'
-
-                if job['experience'] == 'Unknown' and location_text:
-                    loc_lower = location_text.lower()
-                    if 'entry' in loc_lower or '0-2' in loc_lower or 'fără' in loc_lower:
-                        job['experience'] = 'Entry-Level (< 2 ani)'
-                    elif 'mid' in loc_lower or '2-5' in loc_lower or 'middle' in loc_lower:
-                        job['experience'] = 'Mid-Level (2-5 ani)'
-                    elif 'senior' in loc_lower or '5-10' in loc_lower:
-                        job['experience'] = 'Senior-Level (> 5 ani)'
-          
-
-                time.sleep(2)
+                job['technologies'] = []
+                job['experience'] = 'Unknown'
+                job['work_mode'] = 'On-site'
 
                 job['id'] = self.generate_job_id(title_text, company_text)
 
-                if job['technologies']:
-                    page_jobs.append(job)
+                page_jobs.append(job)
 
         if page_jobs:
-            db_object.save_jobs_to_db(page_jobs, source_name = 'BestJobs')
-            return len(page_jobs)
+            return page_jobs
 
-        return 0
+        return []
+    
+    async def process_descriptions_await(self, job_list, tech_keywords):
+
+        if not job_list:
+            return []
+        
+        parser = JobParser()
+        processed_jobs = []
+
+        async def worker(session, job):
+            try:
+                html_desc = await self.fetch_description_html_async(session, job['link'])
+
+                if html_desc and html_desc != 'BLOCKED_429':
+                    job['raw_html_desc'] = html_desc
+            except Exception as e:
+                logging.warning(f"   [Async Network Warning] Failed fetching for {job['link']}: {e}")
+
+            await asyncio.sleep(0.5)
+
+        batch_size = 15
+
+        for i in range(0, len(job_list), batch_size):
+            batch = job_list[i:i + batch_size]
+
+            async with aiohttp.ClientSession() as session:
+                tasks = [worker(session, job) for job in batch]
+                await asyncio.gather(*tasks)
+
+            await asyncio.sleep(0.5)
+
+        logging.info(f"   [Parser Engine BestJobs] Starting analytical parsing for {len(job_list)} fetched pages...")
+        for job in job_list:
+            if 'raw_html_desc' in job and job['raw_html_desc']:
+                  
+                try:
+                    html_content = job['raw_html_desc']
+                    techs, exp, mode, real_location = parser.extract_data_from_bestjobs_description(job['link'], tech_keywords, fetch_func = lambda url : html_content)
+
+                    job['technologies'] = techs
+                    job['experience'] = exp
+                    job['work_mode'] = mode
+
+                    if real_location and real_location != 'Unknown':
+                        job['location'] = real_location
+
+                    del job['raw_html_desc']
+
+                    if job['technologies']:
+                        processed_jobs.append(job)
+                except Exception as e:
+                    logging.warning(f"   [Parser Error BestJobs] Error extracting text details: {e}")
+                    
+        return processed_jobs
 
 if __name__ == "__main__":
     real_test_db = JobDatabase("test_bestjobs.db") 

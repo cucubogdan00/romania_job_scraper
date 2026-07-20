@@ -1,4 +1,5 @@
 import re
+import logging
 
 from bs4 import BeautifulSoup
 class JobParser:
@@ -33,7 +34,20 @@ class JobParser:
             clean_city = 'All' if work_mode == 'Remote' else 'N/A'
 
         return clean_city, work_mode
+    
+    def find_tech_in_text(self, text, tech_keywords):
 
+        found = []
+        for kw in tech_keywords:
+            kw_lower = kw.lower()
+            if re.match(r'^[a-zA-Z0-9]+$', kw_lower):
+                pattern = r'\b' + re.escape(kw_lower) + r'\b'
+                if re.search(pattern,text):
+                    found.append(kw)
+            else:
+                if kw_lower in text:
+                    found.append(kw)
+        return found
 
     def extract_data_from_description(self, job_url, tech_keywords, fetch_func):
 
@@ -42,52 +56,49 @@ class JobParser:
         if job_html == None: return [], 'Unknown', 'Unknown'
 
         soup = BeautifulSoup(job_html, 'html.parser')
-        description_container = soup.find('div' , class_ = 'jobs-show-main-description__section')
-        experience_tags = soup.find_all('a' , class_ = 'jobs-show-main-summaries__summary-link')
 
-        if description_container:
-            full_text = description_container.get_text(strip = True).lower()
+        json_ld_script = soup.find('script', type = 'application/ld+json')
+        if json_ld_script:
+            full_text = json_ld_script.get_text().lower()
         else:
-            body_container = soup.find('body')
-            full_text = body_container.get_text(strip = True).lower() if body_container else ""
+            description_container = soup.find('div' , class_ = 'jobs-show-main-description__section')
+            
+            if description_container:
+                full_text = description_container.get_text(strip = True).lower()
+            else:
+                body_container = soup.find('body')
+                full_text = body_container.get_text(strip = True).lower() if body_container else ""
+
+        experience_tags = soup.find_all('a' , class_ = 'jobs-show-main-summaries__summary-link')
 
         experience_text = 'Unknown'
         work_mode_text = 'On-site'
 
-        for tag in experience_tags:
-            text_clean = tag.get_text(strip = True).strip(', ')
-            text_lower = text_clean.lower()
+        if experience_tags:
+            for tag in experience_tags:
+                text_clean = tag.get_text(strip = True).strip(', ')
+                text_lower = text_clean.lower()
 
-            if 'level' in text_lower or 'ani' in text_lower or 'experien' in text_lower:
-                experience_text = text_clean
-                continue
+                if 'level' in text_lower or 'ani' in text_lower or 'experien' in text_lower:
+                    experience_text = text_clean
+                    continue
 
-            if 'remote' in text_lower:
-                work_mode_text = 'Remote'
-            elif 'hibrid' in text_lower or 'hybrid' in text_lower:
-                work_mode_text = 'Hybrid'
+                if 'remote' in text_lower:
+                    work_mode_text = 'Remote'
+                elif 'hibrid' in text_lower or 'hybrid' in text_lower:
+                    work_mode_text = 'Hybrid'
 
         valid_experience_levels = {
             'Entry-Level (< 2 ani)',
             'Mid-Level (2-5 ani)',
             'Senior-Level (> 5 ani)'
         }
-
         if experience_text == 'Fără experiență':
             experience_text = 'Entry-Level (< 2 ani)'
         elif experience_text not in valid_experience_levels:
             experience_text = 'Unknown'
 
-        found_tech = []
-            
-        for keyword in tech_keywords:
-            
-            kw_clean = keyword.lower()
-            kw_escaped = re.escape(kw_clean)
-            pattern = rf'\b{kw_escaped}\b'
-
-            if re.search(pattern, full_text):
-                found_tech.append(keyword)
+        found_tech = self.find_tech_in_text(full_text, tech_keywords)
             
         return found_tech , experience_text, work_mode_text
     
@@ -153,13 +164,6 @@ class JobParser:
             elif 'junior' in full_text or 'entry' in full_text or 'fără experiență' in full_text:
                 experience_text = 'Entry-Level (< 2 ani)'
 
-        found_tech = []
-        for keyword in tech_keywords:
-            kw_clean = keyword.lower()
-            kw_escaped = re.escape(kw_clean)
-            pattern = rf'\b{kw_escaped}\b'
-
-            if re.search(pattern, full_text):
-                found_tech.append(keyword)
+        found_tech = self.find_tech_in_text(full_text, tech_keywords)
         
         return found_tech, experience_text, work_mode_text, location_text
