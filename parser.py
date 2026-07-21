@@ -73,17 +73,13 @@ class JobParser:
 
         soup = BeautifulSoup(job_html, 'html.parser')
 
-        json_ld_script = soup.find('script', type = 'application/ld+json')
-        if json_ld_script:
-            full_text = json_ld_script.get_text().lower()
+        description_container = soup.find('div' , class_ = 'jobs-show-main-description__section')
+        
+        if description_container:
+            full_text = description_container.get_text(separator=' ',strip = True).lower()
         else:
-            description_container = soup.find('div' , class_ = 'jobs-show-main-description__section')
-            
-            if description_container:
-                full_text = description_container.get_text(strip = True).lower()
-            else:
-                body_container = soup.find('body')
-                full_text = body_container.get_text(strip = True).lower() if body_container else ""
+            description_container = soup.find('main') or soup.find('body')
+            full_text = description_container.get_text(separator=' ',strip = True).lower() if description_container else ""
 
         experience_tags = soup.find_all('a' , class_ = 'jobs-show-main-summaries__summary-link')
 
@@ -129,7 +125,7 @@ class JobParser:
         description_container = soup.find('div' , class_ = 'job-description')
         
         if description_container:
-            full_text = description_container.get_text(strip = True).lower()
+            full_text = description_container.get_text(separator=' ',strip = True).lower()
         else:
             body_container = soup.find('body')
             full_text = body_container.get_text(strip = True).lower() if body_container else ""
