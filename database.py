@@ -90,14 +90,17 @@ class JobDatabase:
         logging.info(f'[SQL Database] Done! Out of {len(job_list)} filtered jobs, {saved_count} were NEW and successfully saved.')
 
 
-    def check_expired_jobs(self, fetch_func):
+    def check_expired_jobs(self, fetch_func, run_start_time):
 
         logging.info('\n[Checker] Starting verification of active jobs for expiration...')
 
         connection = sqlite3.connect(self.db_name)
         cursor = connection.cursor()
 
-        cursor.execute("SELECT id, link, title FROM jobs WHERE status = 'active'")
+        cursor.execute(
+            "SELECT id, link, title FROM jobs WHERE status = 'active' and date_scraped < ?",
+            (run_start_time,)
+            )   
         active_jobs = cursor.fetchall()
 
         if not active_jobs:

@@ -38,14 +38,30 @@ class JobParser:
     def find_tech_in_text(self, text, tech_keywords):
 
         found = []
+        text_lower = text.lower()
+
+        special_patterns = {
+            '.net': r'(?:\bdotnet\b|\b\.net\b)',
+            'c#': r'(?:\bc#\b|\bc-sharp\b)',
+            'c++': r'(?:\bc\+\+\b)',
+            'ci/cd': r'(?:\bci/cd\b|\bci-cd\b)',
+            'asp.net': r'(?:\basp\.net\b)'
+        }
+
         for kw in tech_keywords:
             kw_lower = kw.lower()
-            if re.match(r'^[a-zA-Z0-9]+$', kw_lower):
+
+            if kw_lower in special_patterns:
+                pattern = special_patterns[kw_lower]
+                if re.search(pattern,text_lower):
+                    found.append(kw)
+            elif re.match(r'^[a-zA-Z0-9]+$', kw_lower):
                 pattern = r'\b' + re.escape(kw_lower) + r'\b'
-                if re.search(pattern,text):
+                if re.search(pattern, text_lower):
                     found.append(kw)
             else:
-                if kw_lower in text:
+                pattern = r'(?<![a-zA-Z0-9])' + re.escape(kw_lower) + r'(?![a-zA-Z0-9])'
+                if re.search(pattern, text_lower):
                     found.append(kw)
         return found
 

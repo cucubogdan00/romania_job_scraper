@@ -3,6 +3,7 @@ import logging
 import sys
 import asyncio
 
+from datetime import datetime
 from bs4 import BeautifulSoup
 from scraper import EJobsScraper
 from database import JobDatabase
@@ -22,6 +23,8 @@ logging.basicConfig(
 )
 
 async def main():
+
+    run_start_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     tech_keywords = {
             'python', 'sap', 'abap', 'cnc', 'siemens', 'java', 'git', 'sql', 'docker', 'linux',
@@ -43,8 +46,6 @@ async def main():
     db = JobDatabase('jobs.db')
 
     db.init_db()
-
-    db.check_expired_jobs(ejobs_scraper.fetch_description_html_fast)
 
     ejobs_categories = [
         'it-software',
@@ -164,6 +165,9 @@ async def main():
         active_driver.quit()
 
     logging.info(f'\nTotal IT jobs saved during this run: {total_saved_run}')
+    
+    db.check_expired_jobs(ejobs_scraper.fetch_description_html_fast, run_start_time)
+
     db.generate_market_report()
 
 if __name__ == "__main__":
