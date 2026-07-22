@@ -55,19 +55,30 @@ class EJobsScraper(BaseScraper):
         
     def parse_job_cards(self, html_content, db_object, tech_keywords):
 
-        if html_content == None: return 0
+        if html_content == None: return []
         
         soup = BeautifulSoup(html_content, 'html.parser')
         headings = soup.find_all('h2', class_='job-card-content-middle__title')
     
         page_jobs = []
 
+        negative_keywords = [
+            'cnc', 'operator', 'mecanic', 'tehnician', 'stivuitorist', 
+            'contabil', 'economist', 'vanzari', 'sales', 'reprezentant', 
+            'logistic', 'achizitii', 'call center', 'operator date', 'chef'
+        ]
+
         for heading in headings:
 
             link_tag = heading.find('a')
             if link_tag:
-                job = self.create_job_blueprint()
                 title_text = link_tag.get_text(strip = True)
+
+                title_lower = title_text.lower()
+                if any(neg_word in title_lower for neg_word in negative_keywords):
+                    continue
+
+                job = self.create_job_blueprint()
 
                 job_url = link_tag.get('href')  
                 if job_url and not job_url.startswith('http'):

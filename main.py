@@ -27,19 +27,33 @@ async def main():
     run_start_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     tech_keywords = {
-            'python', 'sap', 'abap', 'cnc', 'siemens', 'java', 'git', 'sql', 'docker', 'linux',
-            'javascript', 'react', 'angular', 'html', 'css', 'php', 'c++', 'c#', 'ruby', 'go', 
-            'rust', 'typescript', 'vue', 'node', 'postgres', 'mongo', 'kubernetes', 'aws', 
-            'azure', 'jenkins', 'selenium', 'cypress', 'jmeter', 'wireshark', 'automation',
-            'hana', 'fiori', 'btp', 'basis', 'playwright', 'postman', 'ci/cd', 'bash', 'terraform',
-            'c-sharp', 'embedded', 'microcontroller','kafka', 'elasticsearch', 'ansible',
-            'jenkins', 'gitlab', 'github', 'bitbucket', 'jira', 'confluence',
-            'mongodb', 'postgresql', 'mysql', 'oracle', 'sqlserver', 'golang',
-            'react', 'vue', 'angular', 'node', 'express', 'django', 'flask',
-            'spring', 'hibernate', 'asp.net', '.net', 'dotnet', 'kotlin', 'scala',
-            'docker', 'podman', 'openshift', 'istio', 'prometheus', 'grafana',
-            'linux', 'windows', 'macos', 'unix','azure', 'aws', 'gcp', 'cloud', 'helm',
-            }
+        # Programming Languages
+        'python', 'java', 'c++', 'c#', 'c-sharp', 'php', 'ruby', 'go', 'golang', 
+        'rust', 'typescript', 'javascript', 'kotlin', 'scala', 'lua', 'solidity',
+        
+        # Web & Mobile Frameworks
+        'react', 'next.js', 'angular', 'vue', 'nuxt.js', ' Svelte', 'node', 'express', 
+        'django', 'flask', 'fastapi', 'spring', 'hibernate', 'asp.net', '.net', 'dotnet', 
+        'graphql', 'tailwind', 'wordpress', 'flutter', 'react native', 'ionic',
+        
+        # Databases & Streaming
+        'sql', 'mysql', 'postgresql', 'postgres', 'mongodb', 'mongo', 
+        'oracle', 'sqlserver', 'redis', 'elasticsearch', 'kafka', 'dynamodb', 'cassandra',
+        
+        # Cloud, DevOps & Infrastructure
+        'aws', 'azure', 'gcp', 'cloud', 'docker', 'podman', 'kubernetes', 
+        'openshift', 'terraform', 'ansible', 'helm', 'ci/cd', 'bash', 'serverless', 'lambda',
+        
+        # Cybersecurity & AppSec
+        'oauth', 'jwt', 'penetration testing', 'owasp', 'cybersecurity', 'encryption',
+        
+        # AI, ML & Data Engineering
+        'pytorch', 'tensorflow', 'pandas', 'numpy', 'spark', 'hadoop', 'databricks', 'airflow', 'langchain', 'openai',
+        
+        # Testing, Version Control & API
+        'git', 'github', 'gitlab', 'bitbucket', 'selenium', 'cypress', 
+        'playwright', 'jmeter', 'postman', 'prometheus', 'grafana', 'wireshark' 
+        }
 
     ejobs_scraper = EJobsScraper()
     bestjobs_scraper = BestJobsScraper()

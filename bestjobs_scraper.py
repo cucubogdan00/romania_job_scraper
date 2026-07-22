@@ -85,7 +85,7 @@ class BestJobsScraper(BaseScraper):
             
     def parse_job_cards(self, html_content, db_object, tech_keywords, driver):
 
-        if html_content == None: return 0
+        if html_content == None: return []
         
         soup = BeautifulSoup(html_content, 'html.parser')
         headings = soup.find_all('a', class_='absolute inset-0 z-1')
