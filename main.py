@@ -5,7 +5,7 @@ import asyncio
 
 from datetime import datetime
 from bs4 import BeautifulSoup
-from scraper import EJobsScraper
+from ejobs_scraper import EJobsScraper
 from database import JobDatabase
 from bestjobs_scraper import BestJobsScraper
 from selenium import webdriver
