@@ -1,4 +1,4 @@
-name: Run Romania Job Scraper Daily
+name: Run Romania IT Job Scraper Daily
 
 on:
   schedule:
@@ -20,7 +20,7 @@ jobs:
 
     - name: Build Docker Image
       run: |
-        docker build -t romania_job_scraper .
+        docker build -t romania_it_job_scraper .
 
     - name: Run Scraper Container
       run: |

@@ -1,4 +1,4 @@
-# Romania Job Scraper
+# Romania IT Job Scraper
 
 A high-performance, hybrid web scraper designed to collect, parse, and analyze IT and technical job openings from Romania's leading recruitment platforms (eJobs and BestJobs).
 
@@ -35,7 +35,7 @@ The application is pre-configured to run isolated inside a container. To build t
 
 ```bash
 # 1. Build the Docker image
-docker build -t romania_job_scraper .
+docker build -t romania_it_job_scraper .
 
 # 2. Run the container with database and log volume mapping
 docker run --rm \
