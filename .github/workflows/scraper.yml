@@ -29,7 +29,7 @@ jobs:
         docker run --rm \
           -v $(pwd)/jobs.db:/app/jobs.db \
           -v $(pwd)/scraper.log:/app/scraper.log \
-          romania_job_scraper
+          romania_it_job_scraper
 
     - name: Commit and Push Database Updates
       run: |
