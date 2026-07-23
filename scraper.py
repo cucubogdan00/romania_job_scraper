@@ -31,7 +31,7 @@ class EJobsScraper(BaseScraper):
 
         try:
             driver.get(url)
-            time.sleep(3)
+            time.sleep(2.5)
 
             for i in range(7):
                 current_pixel = (i + 1) * 1500
@@ -55,10 +55,13 @@ class EJobsScraper(BaseScraper):
         
     def parse_job_cards(self, html_content, db_object, tech_keywords):
 
-        if html_content == None: return []
+        if html_content == None: return [], False
         
         soup = BeautifulSoup(html_content, 'html.parser')
         headings = soup.find_all('h2', class_='job-card-content-middle__title')
+
+        if not headings:
+            return [], False
     
         page_jobs = []
 
@@ -105,12 +108,12 @@ class EJobsScraper(BaseScraper):
                 page_jobs.append(job)
 
         if page_jobs:
-            return page_jobs
+            return page_jobs, True
 
-        return []
+        return [], True
     
-    async def process_descriptions_await(self, job_list, tech_keywords, batch_size = 20, 
-                                         concurrency = 5, max_retries = 2, cookies = None, user_agent = None):
+    async def process_descriptions_await(self, job_list, tech_keywords, batch_size = 15, 
+                                         concurrency = 7, max_retries = 2, cookies = None, user_agent = None):
 
         if not job_list:
             return []
@@ -158,7 +161,7 @@ class EJobsScraper(BaseScraper):
                         logging.warning(f"   [Async Network Warning] Failed fetching for {job['link']}: {e}")
                         next_pending.append(job)
 
-                    await asyncio.sleep(random.uniform(1.2, 2.0))
+                    await asyncio.sleep(random.uniform(1.2, 2))
 
             
             for i in range(0, len(pending_jobs), batch_size):  
@@ -171,7 +174,7 @@ class EJobsScraper(BaseScraper):
 
                 batch_failed = len(next_pending) - pending_before
                 if batch_failed >= max(3, len(batch)//2):
-                    await asyncio.sleep(20)      
+                    await asyncio.sleep(10)      
                 else:
                     await asyncio.sleep(1.5)
 

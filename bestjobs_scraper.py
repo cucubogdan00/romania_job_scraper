@@ -2,6 +2,7 @@ import time
 import logging
 import asyncio
 import aiohttp
+import random
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -11,6 +12,7 @@ from selenium.webdriver.common.by import By
 from base_scraper import BaseScraper
 from parser import JobParser
 from database import JobDatabase
+from curl_cffi.requests import AsyncSession
 
 class BestJobsScraper(BaseScraper):
 
@@ -28,7 +30,7 @@ class BestJobsScraper(BaseScraper):
         try:
             driver = webdriver.Chrome(options=chrome_options)
             driver.get(url)
-            time.sleep(4)
+            time.sleep(2.0)
 
             click_count = 0
             max_clicks = 50
@@ -42,19 +44,19 @@ class BestJobsScraper(BaseScraper):
                 for i in range(1, 10):
                     target_pixel = int((i / 9) * last_height)
                     driver.execute_script(f'window.scrollTo(0, {target_pixel});')
-                    time.sleep(0.5)
+                    time.sleep(0.2)
 
-                time.sleep(2)
+                time.sleep(0.8)
                
                 try:
                     button = driver.find_element(By.CSS_SELECTOR, "button.bg-secondary")
                     if button.is_displayed():
                         driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", button)
-                        time.sleep(1)
+                        time.sleep(0.4)
                         button.click()
                         click_count += 1
                         logging.info(f"   [Selenium] Clicked 'Load more' ({click_count}/{max_clicks}). Loading next batch...")
-                        time.sleep(3)
+                        time.sleep(1.2)
                     else:
                         logging.info("   [Pagination] 'Load more' button is hidden. Reached the end.")
                         break
@@ -77,7 +79,7 @@ class BestJobsScraper(BaseScraper):
     def fetch_description_html_selenium(self, url, driver):
         try:
             driver.get(url)
-            time.sleep(1.2) 
+            time.sleep(0.6) 
             return driver.page_source
         except Exception as error:
             logging.exception(f"[Selenium Error] Error loading description via Selenium: {error}")
@@ -133,26 +135,34 @@ class BestJobsScraper(BaseScraper):
 
         return []
     
-    async def process_descriptions_await(self, job_list, tech_keywords):
+    async def process_descriptions_await(self, job_list, tech_keywords, batch_size = 15, concurrency = 7):
 
         if not job_list:
             return []
         
         parser = JobParser()
         processed_jobs = []
+        pending_jobs = list(job_list)
+
+        headers = {
+            'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language' : 'ro-RO,ro;q=0.9,en-US;q=0.8,en;q=0.7',
+        }
+
+        semaphore = asyncio.Semaphore(concurrency)
 
         async def worker(session, job):
-            try:
-                html_desc = await self.fetch_description_html_async(session, job['link'])
+            async with semaphore:
+                try:
+                    html_desc = await self.fetch_description_html_async(session, job['link'])
 
-                if html_desc and html_desc != 'BLOCKED_429':
-                    job['raw_html_desc'] = html_desc
-            except Exception as e:
-                logging.warning(f"   [Async Network Warning] Failed fetching for {job['link']}: {e}")
+                    if html_desc and html_desc != 'BLOCKED_429':
+                        job['raw_html_desc'] = html_desc
+                except Exception as e:
+                    logging.warning(f"   [Async Network Warning] Failed fetching for {job['link']}: {e}")
 
-            await asyncio.sleep(0.5)
-
-        batch_size = 15
+                await asyncio.sleep(random.uniform(1.0, 1.5))
 
         for i in range(0, len(job_list), batch_size):
             batch = job_list[i:i + batch_size]
@@ -161,7 +171,7 @@ class BestJobsScraper(BaseScraper):
                 tasks = [worker(session, job) for job in batch]
                 await asyncio.gather(*tasks)
 
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.8)
 
         logging.info(f"   [Parser Engine BestJobs] Starting analytical parsing for {len(job_list)} fetched pages...")
         for job in job_list:
